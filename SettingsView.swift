@@ -22,7 +22,7 @@ struct SettingsView: View {
     @AppStorage("leftModulesList") private var leftModules: [String] = ["Media"]
     @AppStorage("rightModulesList") private var rightModules: [String] = ["Clock"]
     
-    let availableModules = ["Media", "Battery", "Clock", "WiFi", "None"]
+    let availableModules = ["Media", "Battery", "Clock", "AirDrop", "Calendar", "Weather", "CPU", "RAM", "Notes", "Reminders", "AirPods", "Screen Time", "Storage", "Network", "None"]
     
     // Compute remaining items so users cannot add duplicates
     private var filteredAvailableModules: [String] {

@@ -12,7 +12,7 @@ struct ContentView: View {
     
     // Dynamic width calculation
     private var dynamicWidth: CGFloat {
-        let baseSpacing: CGFloat = 120 // Base margins + Settings Cog space + edge buffers
+        let baseSpacing: CGFloat = 50 // Base margins + center time space
         
         let allModules = leftModules + rightModules
         var totalModuleWidths: CGFloat = 0
@@ -22,14 +22,24 @@ struct ContentView: View {
             case "Clock": totalModuleWidths += 160
             case "Media": totalModuleWidths += 240
             case "Battery": totalModuleWidths += 130
-            case "WiFi": totalModuleWidths += 130
+            case "AirDrop": totalModuleWidths += 150
+            case "Calendar": totalModuleWidths += 180
+            case "Weather": totalModuleWidths += 190
+            case "CPU": totalModuleWidths += 140
+            case "RAM": totalModuleWidths += 150
+            case "Notes": totalModuleWidths += 150
+            case "Reminders": totalModuleWidths += 160
+            case "AirPods": totalModuleWidths += 160
+            case "Screen Time": totalModuleWidths += 160
+            case "Storage": totalModuleWidths += 160
+            case "Network": totalModuleWidths += 210
             default: totalModuleWidths += 120 // Fallback
             }
         }
         
-        // Add 20pt for every spacing gap inside the HStack groups
-        let calculated = baseSpacing + totalModuleWidths + CGFloat(max(0, allModules.count - 1) * 20) 
-        return allModules.isEmpty ? 250 : calculated
+        // Add 14pt for spacing gaps, accounting for the center time as an extra node
+        let calculated = baseSpacing + totalModuleWidths + CGFloat(allModules.count * 14) 
+        return allModules.isEmpty ? 200 : calculated
     }
     
     var body: some View {
@@ -37,7 +47,7 @@ struct ContentView: View {
             ZStack {
                 // Content
                 if hoverObserver.isHovering {
-                    HStack(spacing: 20) {
+                    HStack(spacing: 14) {
                         
                         // LEFT MODULES
                         ForEach(leftModules, id: \.self) { mod in
@@ -45,19 +55,11 @@ struct ContentView: View {
                                 .id(mod)
                         }
                         
-                        Spacer()
-                        
-                        // CENTER SETTINGS BUTTON
-                        Button(action: {
-                            openSettings()
-                        }) {
-                            Image(systemName: "gearshape.fill")
-                                .foregroundColor(.gray.opacity(0.5))
-                                .font(.system(size: 16))
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        
-                        Spacer()
+                        // CENTER TIME
+                        Text(Date(), style: .time)
+                            .font(.system(size: 14, weight: .medium, design: .rounded))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 4)
                         
                         // RIGHT MODULES (Or Drop Shelf if dragging)
                         if isTargeted || draggedItemName != nil {
@@ -90,13 +92,31 @@ struct ContentView: View {
                     }
                     .padding(.horizontal, 25)
                     .transition(.opacity.combined(with: .scale))
+                    
+                    // TOP RIGHT SETTINGS BUTTON
+                    VStack {
+                        HStack {
+                            Spacer()
+                            Button(action: { openSettings() }) {
+                                Image(systemName: "gearshape.fill")
+                                    .foregroundColor(.gray.opacity(0.5))
+                                    .font(.system(size: 12))
+                                    .padding(8) // Give it a slightly larger hit area
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .padding(.top, 4)
+                            .padding(.trailing, 8)
+                        }
+                        Spacer()
+                    }
+                    .transition(.opacity)
                 } else {
                     // Emulate physical notch base width
                     Color.clear
                 }
             }
-            .frame(width: hoverObserver.isHovering ? dynamicWidth : 200, 
-                   height: hoverObserver.isHovering ? 86 : 32)
+            .frame(width: hoverObserver.isHovering ? dynamicWidth : 160, 
+                   height: hoverObserver.isHovering ? 86 : 16)
             .background(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .fill(Color.black)
@@ -113,8 +133,8 @@ struct ContentView: View {
             // Push everything to the top of the 120pt high window
             Spacer(minLength: 0)
         }
-        // Frame the entire VStack (safe area + dynamic content) using a wider 1400pt canvas
-        .frame(width: 1400, height: 120, alignment: .top)
+        // Frame the entire VStack (safe area + dynamic content) using a wider 2800pt canvas
+        .frame(width: 2800, height: 120, alignment: .top)
         // Ensure SwiftUI view respects safe area / borderless
         .edgesIgnoringSafeArea(.all)
         .onDrop(of: [UTType.fileURL], isTargeted: $isTargeted) { providers in
@@ -145,8 +165,28 @@ struct ContentView: View {
             ClockModule()
         case "Media":
             MediaModule()
-        case "WiFi":
-            WifiModule()
+        case "AirDrop":
+            AirDropModule()
+        case "Calendar":
+            CalendarModule()
+        case "Weather":
+            WeatherModule()
+        case "CPU":
+            CPUModule()
+        case "RAM":
+            RAMModule()
+        case "Notes":
+            NotesModule()
+        case "Reminders":
+            RemindersModule()
+        case "AirPods":
+            AirPodsModule()
+        case "Screen Time":
+            ScreenTimeModule()
+        case "Storage":
+            StorageModule()
+        case "Network":
+            NetworkModule()
         default:
             EmptyView()
         }

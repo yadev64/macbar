@@ -29,12 +29,11 @@ class HoverObserver: ObservableObject {
                 window.setFrameOrigin(targetOrigin)
             }
             
-            // Define an absolute interaction area centered at the top of the current screen.
-            // Width: 1400 (allows catching approaching mouse for wider notch), Height: 200
+            // Width: 2800 (allows catching approaching mouse for wider notch), Height: 200
             let hoverArea = NSRect(
-                x: screenRect.midX - 700,
+                x: screenRect.midX - 1400,
                 y: screenRect.maxY - 200,
-                width: 1400,
+                width: 2800,
                 height: 200
             )
             

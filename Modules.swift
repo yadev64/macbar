@@ -78,41 +78,6 @@ struct ClockModule: View {
     }
 }
 
-struct WifiModule: View {
-    @State private var isConnected = true
-    @State private var isHovering = false
-    
-    var body: some View {
-        Button(action: {
-            // Note: Toggling actual macOS WiFi requires root/SystemConfiguration APIs.
-            // This just toggles the visual mock for interactability demonstration.
-            withAnimation { isConnected.toggle() }
-        }) {
-            HStack(spacing: 8) {
-                Image(systemName: isConnected ? "wifi" : "wifi.slash")
-                    .foregroundColor(isConnected ? .blue : .red)
-                    .font(.system(size: 20, weight: .bold))
-                
-                VStack(alignment: .leading) {
-                    Text("Wi-Fi")
-                        .font(.footnote)
-                        .foregroundColor(.gray)
-                    Text(isConnected ? "Connected" : "Not Found")
-                        .font(.caption)
-                        .foregroundColor(.white)
-                }
-            }
-            .padding(6)
-            .background(isHovering ? Color.white.opacity(0.1) : Color.clear)
-            .cornerRadius(8)
-        }
-        .buttonStyle(PlainButtonStyle())
-        .onHover { hovering in
-            isHovering = hovering
-        }
-    }
-}
-
 struct MediaModule: View {
     @State private var trackName: String = "Not Playing"
     @State private var artistName: String = ""
