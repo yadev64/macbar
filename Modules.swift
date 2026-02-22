@@ -80,39 +80,105 @@ struct ClockModule: View {
 
 struct WifiModule: View {
     @State private var isConnected = true
+    @State private var isHovering = false
     
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: isConnected ? "wifi" : "wifi.slash")
-                .foregroundColor(isConnected ? .blue : .red)
-                .font(.system(size: 20, weight: .bold))
-            
-            VStack(alignment: .leading) {
-                Text("Wi-Fi")
-                    .font(.footnote)
-                    .foregroundColor(.gray)
-                Text(isConnected ? "Connected" : "Not Found")
-                    .font(.caption)
-                    .foregroundColor(.white)
+        Button(action: {
+            // Note: Toggling actual macOS WiFi requires root/SystemConfiguration APIs.
+            // This just toggles the visual mock for interactability demonstration.
+            withAnimation { isConnected.toggle() }
+        }) {
+            HStack(spacing: 8) {
+                Image(systemName: isConnected ? "wifi" : "wifi.slash")
+                    .foregroundColor(isConnected ? .blue : .red)
+                    .font(.system(size: 20, weight: .bold))
+                
+                VStack(alignment: .leading) {
+                    Text("Wi-Fi")
+                        .font(.footnote)
+                        .foregroundColor(.gray)
+                    Text(isConnected ? "Connected" : "Not Found")
+                        .font(.caption)
+                        .foregroundColor(.white)
+                }
             }
+            .padding(6)
+            .background(isHovering ? Color.white.opacity(0.1) : Color.clear)
+            .cornerRadius(8)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .onHover { hovering in
+            isHovering = hovering
         }
     }
 }
 
 struct MediaModule: View {
+    @State private var trackName: String = "Not Playing"
+    @State private var artistName: String = ""
+    @State private var isHovering = false
+    
+    let timer = Timer.publish(every: 3, on: .main, in: .common).autoconnect()
+    
     var body: some View {
-        HStack {
-            Image(systemName: "music.note.list")
-                .foregroundColor(.purple)
-                .font(.system(size: 20))
-            VStack(alignment: .leading) {
-                Text("Now Playing")
-                    .font(.footnote)
-                    .foregroundColor(.gray)
-                Text("Song Title - Artist")
-                    .font(.caption)
-                    .foregroundColor(.white)
-                    .lineLimit(1)
+        Button(action: {
+            // Optional: action for clicking media (e.g. open Spotify)
+            let script = "tell application \"Spotify\" to activate"
+            var error: NSDictionary?
+            if let appleScript = NSAppleScript(source: script) {
+                appleScript.executeAndReturnError(&error)
+            }
+        }) {
+            HStack {
+                Image(systemName: "music.note.list")
+                    .foregroundColor(.purple)
+                    .font(.system(size: 20))
+                VStack(alignment: .leading) {
+                    Text(artistName.isEmpty ? "Media" : artistName)
+                        .font(.footnote)
+                        .foregroundColor(.gray)
+                        .lineLimit(1)
+                    Text(trackName)
+                        .font(.caption)
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                }
+            }
+            .frame(width: 160, alignment: .leading) // Constrain width so it doesn't break formatting on long song titles
+            .padding(6)
+            .background(isHovering ? Color.white.opacity(0.1) : Color.clear)
+            .cornerRadius(8)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .onHover { hovering in
+            isHovering = hovering
+        }
+        .onAppear(perform: updateMediaInfo)
+        .onReceive(timer) { _ in updateMediaInfo() }
+    }
+    
+    private func updateMediaInfo() {
+        // Basic AppleScript query for Spotify
+        let script = """
+        if application "Spotify" is running then
+            tell application "Spotify"
+                if player state is playing then
+                    return name of current track & "|||" & artist of current track
+                end if
+            end tell
+        end if
+        return "Not Playing|||"
+        """
+        
+        var error: NSDictionary?
+        if let appleScript = NSAppleScript(source: script) {
+            let result = appleScript.executeAndReturnError(&error)
+            if let output = result.stringValue {
+                let parts = output.components(separatedBy: "|||")
+                if parts.count >= 2 {
+                    self.trackName = parts[0]
+                    self.artistName = parts[1]
+                }
             }
         }
     }

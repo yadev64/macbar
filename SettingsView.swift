@@ -24,6 +24,11 @@ struct SettingsView: View {
     
     let availableModules = ["Media", "Battery", "Clock", "WiFi", "None"]
     
+    // Compute remaining items so users cannot add duplicates
+    private var filteredAvailableModules: [String] {
+        availableModules.filter { !leftModules.contains($0) && !rightModules.contains($0) }
+    }
+    
     var body: some View {
         VStack {
             Text("Dashboard Configuration")
@@ -37,7 +42,19 @@ struct SettingsView: View {
                         .font(.subheadline).bold()
                     List {
                         ForEach(leftModules, id: \.self) { mod in
-                            Text(mod)
+                            HStack {
+                                Text(mod)
+                                Spacer()
+                                Button(action: {
+                                    if let index = leftModules.firstIndex(of: mod) {
+                                        leftModules.remove(at: index)
+                                    }
+                                }) {
+                                    Image(systemName: "minus.circle.fill")
+                                        .foregroundColor(.red)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
                         }
                         .onMove(perform: moveLeft)
                         .onDelete(perform: deleteLeft)
@@ -46,13 +63,13 @@ struct SettingsView: View {
                     .border(Color.gray.opacity(0.3))
                     
                     Menu("Add Module") {
-                        ForEach(availableModules, id: \.self) { mod in
+                        ForEach(filteredAvailableModules, id: \.self) { mod in
                             Button(mod) {
                                 if leftModules.count < 4 { leftModules.append(mod) }
                             }
                         }
                     }
-                    .disabled(leftModules.count >= 4)
+                    .disabled(leftModules.count >= 4 || filteredAvailableModules.isEmpty)
                 }
                 
                 // RIGHT SIDE MODULES
@@ -61,7 +78,19 @@ struct SettingsView: View {
                         .font(.subheadline).bold()
                     List {
                         ForEach(rightModules, id: \.self) { mod in
-                            Text(mod)
+                            HStack {
+                                Text(mod)
+                                Spacer()
+                                Button(action: {
+                                    if let index = rightModules.firstIndex(of: mod) {
+                                        rightModules.remove(at: index)
+                                    }
+                                }) {
+                                    Image(systemName: "minus.circle.fill")
+                                        .foregroundColor(.red)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
                         }
                         .onMove(perform: moveRight)
                         .onDelete(perform: deleteRight)
@@ -70,13 +99,13 @@ struct SettingsView: View {
                     .border(Color.gray.opacity(0.3))
                     
                     Menu("Add Module") {
-                        ForEach(availableModules, id: \.self) { mod in
+                        ForEach(filteredAvailableModules, id: \.self) { mod in
                             Button(mod) {
                                 if rightModules.count < 4 { rightModules.append(mod) }
                             }
                         }
                     }
-                    .disabled(rightModules.count >= 4)
+                    .disabled(rightModules.count >= 4 || filteredAvailableModules.isEmpty)
                 }
             }
             .padding()

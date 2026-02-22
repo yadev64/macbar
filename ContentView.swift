@@ -12,10 +12,24 @@ struct ContentView: View {
     
     // Dynamic width calculation
     private var dynamicWidth: CGFloat {
-        let baseSpacing: CGFloat = 80 // Base margins + Settings Cog space
-        let moduleWidth: CGFloat = 160 // Estimate for average module width
-        let totalModules = CGFloat(leftModules.count + rightModules.count)
-        return totalModules > 0 ? baseSpacing + (totalModules * moduleWidth) : 200
+        let baseSpacing: CGFloat = 120 // Base margins + Settings Cog space + edge buffers
+        
+        let allModules = leftModules + rightModules
+        var totalModuleWidths: CGFloat = 0
+        
+        for mod in allModules {
+            switch mod {
+            case "Clock": totalModuleWidths += 160
+            case "Media": totalModuleWidths += 240
+            case "Battery": totalModuleWidths += 130
+            case "WiFi": totalModuleWidths += 130
+            default: totalModuleWidths += 120 // Fallback
+            }
+        }
+        
+        // Add 20pt for every spacing gap inside the HStack groups
+        let calculated = baseSpacing + totalModuleWidths + CGFloat(max(0, allModules.count - 1) * 20) 
+        return allModules.isEmpty ? 250 : calculated
     }
     
     var body: some View {
@@ -99,8 +113,8 @@ struct ContentView: View {
             // Push everything to the top of the 120pt high window
             Spacer(minLength: 0)
         }
-        // Frame the entire VStack (safe area + dynamic content)
-        .frame(width: 800, height: 120, alignment: .top)
+        // Frame the entire VStack (safe area + dynamic content) using a wider 1400pt canvas
+        .frame(width: 1400, height: 120, alignment: .top)
         // Ensure SwiftUI view respects safe area / borderless
         .edgesIgnoringSafeArea(.all)
         .onDrop(of: [UTType.fileURL], isTargeted: $isTargeted) { providers in

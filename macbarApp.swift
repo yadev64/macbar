@@ -56,11 +56,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 backing: .buffered,
                 defer: false
             )
-            window.center()
             window.title = "Dashboard Settings"
             window.contentViewController = hostingController
             window.isReleasedWhenClosed = false
             window.level = .floating // Ensure it appears above the current workspace
+            
+            // Explicitly force center placement on primary screen
+            if let screen = NSScreen.main {
+                let screenRect = screen.visibleFrame
+                let windowRect = window.frame
+                let newOrigin = NSPoint(
+                    x: screenRect.midX - (windowRect.width / 2),
+                    y: screenRect.midY - (windowRect.height / 2)
+                )
+                window.setFrameOrigin(newOrigin)
+            } else {
+                window.center()
+            }
+            
             self.settingsWindow = window
         }
         
