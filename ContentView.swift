@@ -12,34 +12,36 @@ struct ContentView: View {
     
     // Dynamic width calculation
     private var dynamicWidth: CGFloat {
-        let baseSpacing: CGFloat = 50 // Base margins + center time space
+        let hStackPadding: CGFloat = 50 // .padding(.horizontal, 25)
+        let timeWidth: CGFloat = 85 // generous for different time formats
+        let hStackSpacing: CGFloat = 16 // Gap
         
         let allModules = leftModules + rightModules
         var totalModuleWidths: CGFloat = 0
         
         for mod in allModules {
             switch mod {
-            case "Clock": totalModuleWidths += 160
-            case "Media": totalModuleWidths += 240
-            case "Battery": totalModuleWidths += 130
-            case "AirDrop": totalModuleWidths += 150
-            case "Calendar": totalModuleWidths += 180
-            case "Weather": totalModuleWidths += 190
-            case "CPU": totalModuleWidths += 140
-            case "RAM": totalModuleWidths += 150
-            case "Notes": totalModuleWidths += 150
-            case "Reminders": totalModuleWidths += 160
-            case "AirPods": totalModuleWidths += 160
-            case "Screen Time": totalModuleWidths += 160
-            case "Storage": totalModuleWidths += 160
-            case "Network": totalModuleWidths += 210
+            case "Clock": totalModuleWidths += 130
+            case "Media": totalModuleWidths += 172
+            case "Battery": totalModuleWidths += 95
+            case "AirDrop": totalModuleWidths += 110
+            case "Calendar": totalModuleWidths += 152
+            case "Weather": totalModuleWidths += 162
+            case "CPU": totalModuleWidths += 112
+            case "RAM": totalModuleWidths += 112
+            case "Notes": totalModuleWidths += 152
+            case "Reminders": totalModuleWidths += 152
+            case "AirPods": totalModuleWidths += 132
+            case "Screen Time": totalModuleWidths += 120
+            case "Storage": totalModuleWidths += 152
+            case "Network": totalModuleWidths += 142
             default: totalModuleWidths += 120 // Fallback
             }
         }
         
-        // Add 14pt for spacing gaps, accounting for the center time as an extra node
-        let calculated = baseSpacing + totalModuleWidths + CGFloat(allModules.count * 14) 
-        return allModules.isEmpty ? 200 : calculated
+        // Gap for time is 2 gaps if time is there. Total elements = count + 1. So gaps = count.
+        let calculated = hStackPadding + timeWidth + totalModuleWidths + (CGFloat(allModules.count) * hStackSpacing)
+        return allModules.isEmpty ? 160 : calculated
     }
     
     var body: some View {
@@ -47,7 +49,7 @@ struct ContentView: View {
             ZStack {
                 // Content
                 if hoverObserver.isHovering {
-                    HStack(spacing: 14) {
+                    HStack(spacing: 16) {
                         
                         // LEFT MODULES
                         ForEach(leftModules, id: \.self) { mod in
