@@ -16,9 +16,11 @@ class NotchWindowController: NSObject {
         guard let screen = NSScreen.main else { return }
         let screenRect = screen.frame
         
-        let notchWidth: CGFloat = 200
-        let notchHeight: CGFloat = 32
+        let notchWidth: CGFloat = 800 // Make the window wide enough to accommodate maximum expanded width
+        // Reset base panel height to support the raw view height without spacer.
+        let notchHeight: CGFloat = 120 // The max expanded height we will allow
         
+        // Window y position: Top of screen - notchHeight
         let rect = NSRect(
             x: screenRect.midX - (notchWidth / 2),
             y: screenRect.maxY - notchHeight,

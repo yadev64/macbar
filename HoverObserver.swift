@@ -6,45 +6,57 @@ class HoverObserver: ObservableObject {
     
     private var globalMonitor: Any?
     private var localMonitor: Any?
+    private var hoverTask: DispatchWorkItem?
+    
+    // Configurable top safe area to clear physical notch
+    let topSafeArea: CGFloat = 36.0
     
     init(window: NSWindow, hostingView: NSView) {
-        // We track the mouse position. If we are within the expanded bounds of the app, we show the expanded UI.
         
         let handler: (NSEvent) -> Void = { [weak self] event in
             guard let self = self else { return }
             
-            // Mouse location in screen coordinates
+            // Mouse location in absolute screen coordinates (bottom-left origin)
             let mouseLoc = NSEvent.mouseLocation
             
-            // Current window frame
-            let windowFrame = window.frame
+            // Get screen bounds for the screen the mouse is currently on
+            guard let screen = NSScreen.screens.first(where: { NSMouseInRect(mouseLoc, $0.frame, false) }) ?? NSScreen.main else { return }
+            let screenRect = screen.frame
             
-            // Define an interaction area. It should be slightly taller/wider than the notch so we catch approaching mouse.
+            // Define an absolute interaction area centered at the top of the current screen.
+            // Width: 800 (allows catching approaching mouse for wider notch), Height: 200
             let hoverArea = NSRect(
-                x: windowFrame.midX - 150,
-                y: windowFrame.maxY - 100, // Top 100 pixels around notch
-                width: 300,
-                height: 100
+                x: screenRect.midX - 400,
+                y: screenRect.maxY - 200,
+                width: 800,
+                height: 200
             )
             
-            if hoverArea.contains(mouseLoc) {
-                if !self.isHovering {
-                    DispatchQueue.main.async {
-                        self.isHovering = true
-                        window.ignoresMouseEvents = false
-                    }
+            let isInside = hoverArea.contains(mouseLoc)
+            
+            // If the state needs to change, debounce it
+            if isInside != self.isHovering {
+                self.hoverTask?.cancel()
+                
+                let workItem = DispatchWorkItem {
+                    self.isHovering = isInside
+                    window.ignoresMouseEvents = !isInside
                 }
+                
+                // Add a small delay for collapsing to avoid flickering if mouse slips out
+                // Fast open, slow close.
+                let delay = isInside ? 0.05 : 0.3
+                self.hoverTask = workItem
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
             } else {
-                if self.isHovering {
-                    DispatchQueue.main.async {
-                        self.isHovering = false
-                        window.ignoresMouseEvents = true
-                    }
-                }
+                // If it evaluates to the same state we are ALREADY in, 
+                // we cancel any pending attempts to change it.
+                // (e.g. mouse slipped out for 0.1s but came right back in)
+                self.hoverTask?.cancel()
             }
         }
         
-        // Initial state assuming collapsed
+        // Initial state
         window.ignoresMouseEvents = true
         
         globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved], handler: handler)
@@ -57,5 +69,6 @@ class HoverObserver: ObservableObject {
     deinit {
         if let gm = globalMonitor { NSEvent.removeMonitor(gm) }
         if let lm = localMonitor { NSEvent.removeMonitor(lm) }
+        hoverTask?.cancel()
     }
 }
