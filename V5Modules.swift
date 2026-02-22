@@ -381,5 +381,43 @@ struct NetworkModule: View {
         }
         .buttonStyle(PlainButtonStyle())
         .onHover { hovering in isHovering = hovering }
+        .buttonStyle(PlainButtonStyle())
+        .onHover { hovering in isHovering = hovering }
+    }
+}
+
+struct MediaModule: View {
+    @State private var isHovering = false
+    @ObservedObject var data = WidgetDataManager.shared
+    
+    var body: some View {
+        Button(action: {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+            process.arguments = ["-a", "Spotify"]
+            try? process.run()
+        }) {
+            HStack(spacing: 8) {
+                Image(systemName: "music.note.list")
+                    .foregroundColor(.purple)
+                    .font(.system(size: 20))
+                VStack(alignment: .leading) {
+                    Text(data.mediaArtist.isEmpty ? "Media" : data.mediaArtist)
+                        .font(.footnote)
+                        .foregroundColor(.gray)
+                        .lineLimit(1)
+                    Text(data.mediaTrack)
+                        .font(.caption)
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                }
+            }
+            .frame(width: 152, alignment: .leading) 
+            .padding(6)
+            .background(isHovering ? Color.white.opacity(0.1) : Color.clear)
+            .cornerRadius(8)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .onHover { hovering in isHovering = hovering }
     }
 }

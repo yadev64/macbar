@@ -6,8 +6,8 @@ struct ContentView: View {
     @State private var isTargeted: Bool = false
     @State private var draggedItemName: String? = nil
     
-    @AppStorage("leftModulesList") private var leftModules: [String] = ["Media"]
-    @AppStorage("rightModulesList") private var rightModules: [String] = ["Clock"]
+    @AppStorage("leftModulesListV2") private var leftModules: [String] = ["CPU", "RAM", "Storage"]
+    @AppStorage("rightModulesListV2") private var rightModules: [String] = ["Calendar", "Media", "Weather"]
     @AppStorage("notchWidth") private var notchWidth: Double = 600.0
     
     // Dynamic width calculation

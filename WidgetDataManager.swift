@@ -14,6 +14,8 @@ class WidgetDataManager: ObservableObject {
     @Published var airPodsData: String = "Disconnected"
     @Published var freeStorage: String = "Calculating..."
     @Published var networkName: String = "Searching..."
+    @Published var mediaTrack: String = "Not Playing"
+    @Published var mediaArtist: String = ""
     
     private var cancellables = Set<AnyCancellable>()
     
@@ -32,6 +34,7 @@ class WidgetDataManager: ObservableObject {
         fetchAirPods()
         fetchStorage()
         fetchNetwork()
+        fetchMedia()
     }
     
     private func startTimers() {
@@ -44,6 +47,7 @@ class WidgetDataManager: ObservableObject {
         Timer.publish(every: 10, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchAirPods() }.store(in: &cancellables)
         Timer.publish(every: 60, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchStorage() }.store(in: &cancellables)
         Timer.publish(every: 5, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchNetwork() }.store(in: &cancellables)
+        Timer.publish(every: 3, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchMedia() }.store(in: &cancellables)
     }
 
     private func fetchCalendar() {
@@ -55,14 +59,27 @@ class WidgetDataManager: ObservableObject {
     }
 
     private func fetchWeather() {
-        guard let url = URL(string: "https://wttr.in/?format=%t+%C") else { return }
-        URLSession.shared.dataTask(with: url) { data, _, _ in
-            if let data = data, let result = String(data: data, encoding: .utf8) {
+        DispatchQueue.global(qos: .background).async {
+            let task = Process()
+            let pipe = Pipe()
+            task.executableURL = URL(fileURLWithPath: "/usr/bin/curl")
+            task.arguments = ["-s", "https://wttr.in/?format=\"%t+%C\""]
+            task.standardOutput = pipe
+            try? task.run()
+            task.waitUntilExit()
+            
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            if let output = String(data: data, encoding: .utf8), !output.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                let cleaned = output.trimmingCharacters(in: CharacterSet(charactersIn: "\"\n\r "))
                 DispatchQueue.main.async {
-                    self.weatherData = result.trimmingCharacters(in: .whitespacesAndNewlines)
+                    self.weatherData = cleaned
+                }
+            } else {
+                DispatchQueue.main.async {
+                    self.weatherData = "N/A"
                 }
             }
-        }.resume()
+        }
     }
 
     private func fetchCPU() {
@@ -249,6 +266,40 @@ class WidgetDataManager: ObservableObject {
                     DispatchQueue.main.async { self.networkName = "Wi-Fi Off" }
                 } else {
                     DispatchQueue.main.async { self.networkName = "Not Connected" }
+                }
+            }
+        }
+    }
+    
+    private func fetchMedia() {
+        DispatchQueue.global(qos: .background).async {
+            let script = """
+            if application "Spotify" is running then
+                tell application "Spotify"
+                    if player state is playing then
+                        return name of current track & "|||" & artist of current track
+                    end if
+                end tell
+            end if
+            return "Not Playing|||"
+            """
+            let task = Process()
+            let pipe = Pipe()
+            task.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+            task.arguments = ["-e", script]
+            task.standardOutput = pipe
+            try? task.run()
+            task.waitUntilExit()
+            
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            if let output = String(data: data, encoding: .utf8) {
+                let clean = output.trimmingCharacters(in: .whitespacesAndNewlines)
+                let parts = clean.components(separatedBy: "|||")
+                if parts.count >= 2 {
+                    DispatchQueue.main.async {
+                        self.mediaTrack = parts[0]
+                        self.mediaArtist = parts[1]
+                    }
                 }
             }
         }

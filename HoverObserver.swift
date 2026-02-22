@@ -29,12 +29,13 @@ class HoverObserver: ObservableObject {
                 window.setFrameOrigin(targetOrigin)
             }
             
-            // Width: 2800 (allows catching approaching mouse for wider notch), Height: 200
+            // Width: 2800 (allows catching approaching mouse for wider notch)
+            // Height: 250 (extend it 50pt *above* the screen edge to catch a mouse slammed against the physical bezel)
             let hoverArea = NSRect(
                 x: screenRect.midX - 1400,
-                y: screenRect.maxY - 200,
+                y: screenRect.maxY - 200, 
                 width: 2800,
-                height: 200
+                height: 250 
             )
             
             let isInside = hoverArea.contains(mouseLoc)
