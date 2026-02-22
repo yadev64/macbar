@@ -6,9 +6,17 @@ struct ContentView: View {
     @State private var isTargeted: Bool = false
     @State private var draggedItemName: String? = nil
     
-    @AppStorage("leftModule") private var leftModule: String = "Media"
-    @AppStorage("rightModule") private var rightModule: String = "Clock"
+    @AppStorage("leftModulesList") private var leftModules: [String] = ["Media"]
+    @AppStorage("rightModulesList") private var rightModules: [String] = ["Clock"]
     @AppStorage("notchWidth") private var notchWidth: Double = 600.0
+    
+    // Dynamic width calculation
+    private var dynamicWidth: CGFloat {
+        let baseSpacing: CGFloat = 80 // Base margins + Settings Cog space
+        let moduleWidth: CGFloat = 160 // Estimate for average module width
+        let totalModules = CGFloat(leftModules.count + rightModules.count)
+        return totalModules > 0 ? baseSpacing + (totalModules * moduleWidth) : 200
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -17,9 +25,11 @@ struct ContentView: View {
                 if hoverObserver.isHovering {
                     HStack(spacing: 20) {
                         
-                        // LEFT MODULE
-                        buildModule(name: leftModule)
-                            .id(leftModule)
+                        // LEFT MODULES
+                        ForEach(leftModules, id: \.self) { mod in
+                            buildModule(name: mod)
+                                .id(mod)
+                        }
                         
                         Spacer()
                         
@@ -35,7 +45,7 @@ struct ContentView: View {
                         
                         Spacer()
                         
-                        // RIGHT MODULE (Or Drop Shelf if dragging)
+                        // RIGHT MODULES (Or Drop Shelf if dragging)
                         if isTargeted || draggedItemName != nil {
                             HStack {
                                 if let iName = draggedItemName {
@@ -58,8 +68,10 @@ struct ContentView: View {
                             .background(Color.white.opacity(0.1))
                             .cornerRadius(8)
                         } else {
-                            buildModule(name: rightModule)
-                                .id(rightModule)
+                            ForEach(rightModules.reversed(), id: \.self) { mod in
+                                buildModule(name: mod)
+                                    .id(mod)
+                            }
                         }
                     }
                     .padding(.horizontal, 25)
@@ -69,7 +81,7 @@ struct ContentView: View {
                     Color.clear
                 }
             }
-            .frame(width: hoverObserver.isHovering ? CGFloat(notchWidth) : 200, 
+            .frame(width: hoverObserver.isHovering ? dynamicWidth : 200, 
                    height: hoverObserver.isHovering ? 86 : 32)
             .background(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
