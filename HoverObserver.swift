@@ -29,13 +29,14 @@ class HoverObserver: ObservableObject {
                 window.setFrameOrigin(targetOrigin)
             }
             
-            // Width: 2800 (allows catching approaching mouse for wider notch)
-            // Height: 250 (extend it 50pt *above* the screen edge to catch a mouse slammed against the physical bezel)
+            // Narrow focus area: only trigger when cursor is near the notch (≈200pt wide, 30pt tall)
+            // This ensures expansion starts only when the mouse is close to the notch region.
+            let notchWidth: CGFloat = 200 // approximate width of the notch area
             let hoverArea = NSRect(
-                x: screenRect.midX - 1400,
-                y: screenRect.maxY - 200, 
-                width: 2800,
-                height: 250 
+                x: screenRect.midX - notchWidth / 2,
+                y: screenRect.maxY - 30, // just below the top edge
+                width: notchWidth,
+                height: 30
             )
             
             let isInside = hoverArea.contains(mouseLoc)
