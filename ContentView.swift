@@ -13,14 +13,6 @@ struct ContentView: View {
     var body: some View {
         VStack(spacing: 0) {
             ZStack {
-                // Background
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Color.black)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(isTargeted ? Color.blue : Color.clear, lineWidth: 2)
-                    )
-                    
                 // Content
                 if hoverObserver.isHovering {
                     HStack(spacing: 20) {
@@ -74,11 +66,22 @@ struct ContentView: View {
                     .transition(.opacity.combined(with: .scale))
                 } else {
                     // Emulate physical notch base width
-                    Color.black
+                    Color.clear
                 }
             }
             .frame(width: hoverObserver.isHovering ? CGFloat(notchWidth) : 200, 
                    height: hoverObserver.isHovering ? 86 : 32)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color.black)
+                    // Push the shape upwards so top corners render off-screen, giving square top corners
+                    .padding(.top, -20) 
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(isTargeted ? Color.blue : Color.clear, lineWidth: 2)
+                    .padding(.top, -20)
+            )
             .animation(.spring(response: 0.4, dampingFraction: 0.6, blendDuration: 0), value: hoverObserver.isHovering)
             
             // Push everything to the top of the 120pt high window
