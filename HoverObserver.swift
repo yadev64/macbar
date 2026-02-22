@@ -29,17 +29,31 @@ class HoverObserver: ObservableObject {
                 window.setFrameOrigin(targetOrigin)
             }
             
-            // Narrow focus area: only trigger when cursor is near the notch (≈200pt wide, 30pt tall)
-            // This ensures expansion starts only when the mouse is close to the notch region.
-            let notchWidth: CGFloat = 200 // approximate width of the notch area
-            let hoverArea = NSRect(
-                x: screenRect.midX - notchWidth / 2,
-                y: screenRect.maxY - 30, // just below the top edge
-                width: notchWidth,
-                height: 30
-            )
-            
-            let isInside = hoverArea.contains(mouseLoc)
+            // TWO-PHASE hover detection:
+            // Phase 1 (collapsed): tiny activation zone right at the physical notch (200pt × 10pt)
+            // Phase 2 (expanded): wider area covering the full notch content so user can interact
+            let isInside: Bool
+            if self.isHovering {
+                // Already expanded — use the full window frame + 50pt buffer above screen edge
+                let expandedArea = NSRect(
+                    x: window.frame.origin.x,
+                    y: window.frame.origin.y,
+                    width: window.frame.width,
+                    height: window.frame.height + 50 // extend above maxY for bezel-pinned cursor
+                )
+                isInside = expandedArea.contains(mouseLoc)
+            } else {
+                // Collapsed — tiny activation strip centered on the notch
+                let activationWidth: CGFloat = 200
+                let activationHeight: CGFloat = 10
+                let activationArea = NSRect(
+                    x: screenRect.midX - activationWidth / 2,
+                    y: screenRect.maxY - activationHeight,
+                    width: activationWidth,
+                    height: activationHeight + 50 // extend above screen top for bezel
+                )
+                isInside = activationArea.contains(mouseLoc)
+            }
             
             // If the state needs to change, debounce it
             if isInside != self.isHovering {
