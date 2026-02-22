@@ -16,6 +16,7 @@ class WidgetDataManager: ObservableObject {
     @Published var networkName: String = "Searching..."
     @Published var mediaTrack: String = "Not Playing"
     @Published var mediaArtist: String = ""
+    @Published var isMediaPlaying: Bool = false
     
     private var cancellables = Set<AnyCancellable>()
     
@@ -276,12 +277,18 @@ class WidgetDataManager: ObservableObject {
             let script = """
             if application "Spotify" is running then
                 tell application "Spotify"
+                    set trackInfo to "Not Playing|||"
+                    set playState to "paused"
                     if player state is playing then
-                        return name of current track & "|||" & artist of current track
+                        set playState to "playing"
                     end if
+                    if player state is playing or player state is paused then
+                        set trackInfo to name of current track & "|||" & artist of current track
+                    end if
+                    return trackInfo & "|||" & playState
                 end tell
             end if
-            return "Not Playing|||"
+            return "Not Playing||||||paused"
             """
             let task = Process()
             let pipe = Pipe()
@@ -295,13 +302,27 @@ class WidgetDataManager: ObservableObject {
             if let output = String(data: data, encoding: .utf8) {
                 let clean = output.trimmingCharacters(in: .whitespacesAndNewlines)
                 let parts = clean.components(separatedBy: "|||")
-                if parts.count >= 2 {
+                if parts.count >= 3 {
                     DispatchQueue.main.async {
                         self.mediaTrack = parts[0]
                         self.mediaArtist = parts[1]
+                        self.isMediaPlaying = parts[2] == "playing"
                     }
                 }
             }
+        }
+    }
+    
+    func sendSpotifyCommand(_ command: String) {
+        DispatchQueue.global(qos: .background).async {
+            let script = "tell application \"Spotify\" to \(command)"
+            let task = Process()
+            task.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+            task.arguments = ["-e", script]
+            try? task.run()
+            task.waitUntilExit()
+            // Re-fetch immediately to update UI
+            self.fetchMedia()
         }
     }
 }

@@ -381,8 +381,6 @@ struct NetworkModule: View {
         }
         .buttonStyle(PlainButtonStyle())
         .onHover { hovering in isHovering = hovering }
-        .buttonStyle(PlainButtonStyle())
-        .onHover { hovering in isHovering = hovering }
     }
 }
 
@@ -391,33 +389,61 @@ struct MediaModule: View {
     @ObservedObject var data = WidgetDataManager.shared
     
     var body: some View {
-        Button(action: {
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-            process.arguments = ["-a", "Spotify"]
-            try? process.run()
-        }) {
-            HStack(spacing: 8) {
-                Image(systemName: "music.note.list")
-                    .foregroundColor(.purple)
-                    .font(.system(size: 20))
-                VStack(alignment: .leading) {
-                    Text(data.mediaArtist.isEmpty ? "Media" : data.mediaArtist)
-                        .font(.footnote)
-                        .foregroundColor(.gray)
-                        .lineLimit(1)
-                    Text(data.mediaTrack)
-                        .font(.caption)
-                        .foregroundColor(.white)
-                        .lineLimit(1)
+        VStack(spacing: 4) {
+            // Track info row — tap to open Spotify
+            Button(action: {
+                let process = Process()
+                process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+                process.arguments = ["-a", "Spotify"]
+                try? process.run()
+            }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "music.note.list")
+                        .foregroundColor(.purple)
+                        .font(.system(size: 18))
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(data.mediaArtist.isEmpty ? "Media" : data.mediaArtist)
+                            .font(.system(size: 9))
+                            .foregroundColor(.gray)
+                            .lineLimit(1)
+                        Text(data.mediaTrack)
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                    }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(width: 152, alignment: .leading) 
-            .padding(6)
-            .background(isHovering ? Color.white.opacity(0.1) : Color.clear)
-            .cornerRadius(8)
+            .buttonStyle(PlainButtonStyle())
+            
+            // Playback controls row
+            HStack(spacing: 12) {
+                Button(action: { data.sendSpotifyCommand("previous track") }) {
+                    Image(systemName: "backward.fill")
+                        .font(.system(size: 11))
+                        .foregroundColor(.white.opacity(0.8))
+                }
+                .buttonStyle(PlainButtonStyle())
+                
+                Button(action: { data.sendSpotifyCommand("playpause") }) {
+                    Image(systemName: data.isMediaPlaying ? "pause.fill" : "play.fill")
+                        .font(.system(size: 13))
+                        .foregroundColor(.white)
+                }
+                .buttonStyle(PlainButtonStyle())
+                
+                Button(action: { data.sendSpotifyCommand("next track") }) {
+                    Image(systemName: "forward.fill")
+                        .font(.system(size: 11))
+                        .foregroundColor(.white.opacity(0.8))
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
         }
-        .buttonStyle(PlainButtonStyle())
+        .frame(width: 152)
+        .padding(6)
+        .background(isHovering ? Color.white.opacity(0.1) : Color.clear)
+        .cornerRadius(8)
         .onHover { hovering in isHovering = hovering }
     }
 }
