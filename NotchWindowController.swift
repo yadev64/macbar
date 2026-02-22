@@ -37,9 +37,10 @@ class NotchWindowController: NSObject {
         
         // Floating above everything
         window.level = .screenSaver
+        window.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
         window.backgroundColor = .clear
         window.isOpaque = false
-        window.hasShadow = true
+        window.hasShadow = false
         window.ignoresMouseEvents = false // We need this to receive hover, but we might toggle it based on intersection
         let hostingView = NSHostingView<AnyView>(rootView: AnyView(EmptyView()))
         window.contentView = hostingView

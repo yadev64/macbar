@@ -23,6 +23,12 @@ class HoverObserver: ObservableObject {
             guard let screen = NSScreen.screens.first(where: { NSMouseInRect(mouseLoc, $0.frame, false) }) ?? NSScreen.main else { return }
             let screenRect = screen.frame
             
+            // Instantly snap the window to the current screen if it isn't there
+            let targetOrigin = NSPoint(x: screenRect.midX - (window.frame.width / 2), y: screenRect.maxY - window.frame.height)
+            if window.frame.origin != targetOrigin {
+                window.setFrameOrigin(targetOrigin)
+            }
+            
             // Define an absolute interaction area centered at the top of the current screen.
             // Width: 800 (allows catching approaching mouse for wider notch), Height: 200
             let hoverArea = NSRect(

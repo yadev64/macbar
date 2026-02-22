@@ -16,7 +16,6 @@ struct ContentView: View {
                 // Background
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(Color.black)
-                    .shadow(color: .black.opacity(0.3), radius: 10, y: 5)
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
                             .stroke(isTargeted ? Color.blue : Color.clear, lineWidth: 2)
@@ -125,10 +124,14 @@ struct ContentView: View {
     }
     
     private func openSettings() {
-        if #available(macOS 13.0, *) {
-            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        if let appDelegate = NSApp.delegate as? AppDelegate {
+            appDelegate.openSettings()
         } else {
-            NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
+            if #available(macOS 13.0, *) {
+                NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+            } else {
+                NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
+            }
         }
         NSApp.activate(ignoringOtherApps: true)
     }
