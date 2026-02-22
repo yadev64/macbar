@@ -15,8 +15,16 @@ struct macbarApp: App {
 }
 
 class AppDelegate: NSObject, NSApplicationDelegate {
+    static var shared: AppDelegate!
+    
     var windowController: NotchWindowController?
     var statusItem: NSStatusItem?
+    var settingsWindow: NSWindow?
+    
+    override init() {
+        super.init()
+        AppDelegate.shared = self
+    }
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupStatusBar()
@@ -38,11 +46,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     @objc func openSettings() {
-        if #available(macOS 13.0, *) {
-            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-        } else {
-            NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
+        print("AppDelegate openSettings called!")
+        if settingsWindow == nil {
+            print("Creating new Settings Window...")
+            let hostingController = NSHostingController(rootView: SettingsView())
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 450, height: 350),
+                styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
+                backing: .buffered,
+                defer: false
+            )
+            window.center()
+            window.title = "Dashboard Settings"
+            window.contentViewController = hostingController
+            window.isReleasedWhenClosed = false
+            window.level = .floating // Ensure it appears above the current workspace
+            self.settingsWindow = window
         }
+        
+        print("Ordering Settings Window to front...")
+        settingsWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
 }

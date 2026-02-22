@@ -127,15 +127,6 @@ struct ContentView: View {
     }
     
     private func openSettings() {
-        if let appDelegate = NSApp.delegate as? AppDelegate {
-            appDelegate.openSettings()
-        } else {
-            if #available(macOS 13.0, *) {
-                NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-            } else {
-                NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
-            }
-        }
-        NSApp.activate(ignoringOtherApps: true)
+        AppDelegate.shared.openSettings()
     }
 }
