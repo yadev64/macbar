@@ -72,7 +72,7 @@ class WidgetDataManager: ObservableObject {
     private func fetchCalendar() {
         DispatchQueue.main.async {
             let formatter = DateFormatter()
-            formatter.dateFormat = "MMMM yyyy"
+            formatter.dateFormat = "EEE, MMM d"
             self.calendarData = formatter.string(from: Date())
         }
     }
