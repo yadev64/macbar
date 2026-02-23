@@ -277,8 +277,8 @@ MIT License — do whatever you want with it. See [LICENSE](LICENSE) for the ful
 
 ---
 
-## 💜 Credits
+## ♥️ Credits
 
-Built with love, Swift, and an unreasonable amount of AppleScript.
+Built using [Google Antigravity](https://antigravity.google/).
 
 If you like macbar, give it a ⭐ — it makes the notch happy.
