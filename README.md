@@ -30,11 +30,7 @@ macbar turns that boring camera cutout into a dynamic, expandable command center
 
 When collapsed, macbar is invisible — it *is* your notch. Hover over it and it smoothly expands into a sleek bar showing your chosen widgets:
 
-```
-┌─────────────────────────────────────────────────────┐
-│  CPU 12%  │  RAM 8.2 GB  │  128 GB  │  12:45 PM  │  📅 Next: Standup  │  🎵 Artist - Song  ⏮ ⏯ ⏭  │  🌤 22°C Clear  │
-└─────────────────────────────────────────────────────┘
-```
+<img width="1512" height="982" alt="Screenshot 2026-02-23 at 9 53 21 AM" src="https://github.com/user-attachments/assets/798565a0-b893-4ea1-b4fa-c42eb4e536a9" />
 
 ---
 
