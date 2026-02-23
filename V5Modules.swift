@@ -388,35 +388,35 @@ struct SpotifyModule: View {
     
     var body: some View {
         VStack(spacing: 4) {
-            Button(action: {
+            HStack(spacing: 8) {
+                Image(systemName: "music.note")
+                    .foregroundColor(.green)
+                    .font(.system(size: 18))
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Spotify")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundColor(.green.opacity(0.8))
+                    Text(data.spotifyTrack)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                    if !data.spotifyArtist.isEmpty {
+                        Text(data.spotifyArtist)
+                            .font(.system(size: 9))
+                            .foregroundColor(.gray)
+                            .lineLimit(1)
+                    }
+                }
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .onTapGesture {
                 let process = Process()
                 process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
                 process.arguments = ["-a", "Spotify"]
                 try? process.run()
-            }) {
-                HStack(spacing: 8) {
-                    Image(systemName: "music.note")
-                        .foregroundColor(.green)
-                        .font(.system(size: 18))
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("Spotify")
-                            .font(.system(size: 9, weight: .semibold))
-                            .foregroundColor(.green.opacity(0.8))
-                        Text(data.spotifyTrack)
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundColor(.white)
-                            .lineLimit(1)
-                        if !data.spotifyArtist.isEmpty {
-                            Text(data.spotifyArtist)
-                                .font(.system(size: 9))
-                                .foregroundColor(.gray)
-                                .lineLimit(1)
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .buttonStyle(PlainButtonStyle())
             
             HStack(spacing: 12) {
                 Button(action: { data.sendSpotifyCommand("previous track") }) {
