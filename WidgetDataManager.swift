@@ -17,6 +17,10 @@ class WidgetDataManager: ObservableObject {
     @Published var mediaTrack: String = "Not Playing"
     @Published var mediaArtist: String = ""
     @Published var isMediaPlaying: Bool = false
+    @Published var mediaSource: String = ""
+    @Published var spotifyTrack: String = "Not Playing"
+    @Published var spotifyArtist: String = ""
+    @Published var isSpotifyPlaying: Bool = false
     
     private var cancellables = Set<AnyCancellable>()
     
@@ -47,7 +51,8 @@ class WidgetDataManager: ObservableObject {
         fetchAirPods()
         fetchStorage()
         fetchNetwork()
-        fetchMedia()
+        fetchSpotify()
+        fetchNowPlaying()
     }
     
     private func startTimers() {
@@ -66,7 +71,8 @@ class WidgetDataManager: ObservableObject {
         Timer.publish(every: 10, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchAirPods() }.store(in: &cancellables)
         Timer.publish(every: 60, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchStorage() }.store(in: &cancellables)
         Timer.publish(every: 5, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchNetwork() }.store(in: &cancellables)
-        Timer.publish(every: 3, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchMedia() }.store(in: &cancellables)
+        Timer.publish(every: 3, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchSpotify() }.store(in: &cancellables)
+        Timer.publish(every: 3, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchNowPlaying() }.store(in: &cancellables)
     }
 
     private func fetchCalendar() {
@@ -339,7 +345,7 @@ class WidgetDataManager: ObservableObject {
         }
     }
     
-    private func fetchMedia() {
+    private func fetchSpotify() {
         DispatchQueue.global(qos: .background).async {
             let script = """
             if application "Spotify" is running then
@@ -371,9 +377,51 @@ class WidgetDataManager: ObservableObject {
                 let parts = clean.components(separatedBy: "|||")
                 if parts.count >= 3 {
                     DispatchQueue.main.async {
-                        self.mediaTrack = parts[0]
-                        self.mediaArtist = parts[1]
-                        self.isMediaPlaying = parts[2] == "playing"
+                        self.spotifyTrack = parts[0]
+                        self.spotifyArtist = parts[1]
+                        self.isSpotifyPlaying = parts[2] == "playing"
+                    }
+                }
+            }
+        }
+    }
+    
+    private func fetchNowPlaying() {
+        DispatchQueue.global(qos: .background).async {
+            // Use the helper script via `swift` interpreter — it uses the private MediaRemote
+            // framework which requires the ObjC/XPC runtime that only the interpreter provides
+            let helperPath = Bundle.main.path(forResource: "nowplaying_helper", ofType: "swift")
+                ?? (Bundle.main.bundlePath as NSString).deletingLastPathComponent + "/nowplaying_helper.swift"
+            
+            let task = Process()
+            let pipe = Pipe()
+            task.executableURL = URL(fileURLWithPath: "/usr/bin/swift")
+            task.arguments = [helperPath]
+            task.standardOutput = pipe
+            task.standardError = FileHandle.nullDevice
+            
+            guard (try? task.run()) != nil else { return }
+            task.waitUntilExit()
+            
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            guard let output = String(data: data, encoding: .utf8) else { return }
+            let clean = output.trimmingCharacters(in: .whitespacesAndNewlines)
+            let parts = clean.components(separatedBy: "|||")
+            
+            if parts.count >= 4 {
+                DispatchQueue.main.async {
+                    let title = parts[0]
+                    let artist = parts[1]
+                    let source = parts[2]
+                    let isPlaying = parts[3] == "true"
+                    
+                    if !title.isEmpty && title != "Not Playing" {
+                        self.mediaTrack = title
+                        self.mediaArtist = artist
+                        self.mediaSource = source
+                        self.isMediaPlaying = isPlaying
+                    } else {
+                        self.isMediaPlaying = false
                     }
                 }
             }
@@ -388,8 +436,41 @@ class WidgetDataManager: ObservableObject {
             task.arguments = ["-e", script]
             try? task.run()
             task.waitUntilExit()
-            // Re-fetch immediately to update UI
-            self.fetchMedia()
+            self.fetchSpotify()
+        }
+    }
+    
+    // Simulate macOS media keys (works system-wide for any media app)
+    func simulateMediaKey(_ key: Int32) {
+        DispatchQueue.global(qos: .background).async {
+            let keyDown = NSEvent.otherEvent(
+                with: .systemDefined,
+                location: .zero,
+                modifierFlags: NSEvent.ModifierFlags(rawValue: 0xa00),
+                timestamp: 0,
+                windowNumber: 0,
+                context: nil,
+                subtype: 8,
+                data1: Int((key << 16) | (0xa << 8)),
+                data2: -1
+            )
+            let keyUp = NSEvent.otherEvent(
+                with: .systemDefined,
+                location: .zero,
+                modifierFlags: NSEvent.ModifierFlags(rawValue: 0xb00),
+                timestamp: 0,
+                windowNumber: 0,
+                context: nil,
+                subtype: 8,
+                data1: Int((key << 16) | (0xb << 8)),
+                data2: -1
+            )
+            keyDown?.cgEvent?.post(tap: .cghidEventTap)
+            keyUp?.cgEvent?.post(tap: .cghidEventTap)
+            // Re-fetch after a short delay
+            DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + 0.5) {
+                self.fetchNowPlaying()
+            }
         }
     }
 }

@@ -384,13 +384,12 @@ struct NetworkModule: View {
     }
 }
 
-struct MediaModule: View {
+struct SpotifyModule: View {
     @State private var isHovering = false
     @ObservedObject var data = WidgetDataManager.shared
     
     var body: some View {
         VStack(spacing: 4) {
-            // Track info row — tap to open Spotify
             Button(action: {
                 let process = Process()
                 process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
@@ -398,25 +397,29 @@ struct MediaModule: View {
                 try? process.run()
             }) {
                 HStack(spacing: 8) {
-                    Image(systemName: "music.note.list")
-                        .foregroundColor(.purple)
+                    Image(systemName: "music.note")
+                        .foregroundColor(.green)
                         .font(.system(size: 18))
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(data.mediaArtist.isEmpty ? "Media" : data.mediaArtist)
-                            .font(.system(size: 9))
-                            .foregroundColor(.gray)
-                            .lineLimit(1)
-                        Text(data.mediaTrack)
+                        Text("Spotify")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundColor(.green.opacity(0.8))
+                        Text(data.spotifyTrack)
                             .font(.system(size: 10, weight: .medium))
                             .foregroundColor(.white)
                             .lineLimit(1)
+                        if !data.spotifyArtist.isEmpty {
+                            Text(data.spotifyArtist)
+                                .font(.system(size: 9))
+                                .foregroundColor(.gray)
+                                .lineLimit(1)
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .buttonStyle(PlainButtonStyle())
             
-            // Playback controls row
             HStack(spacing: 12) {
                 Button(action: { data.sendSpotifyCommand("previous track") }) {
                     Image(systemName: "backward.fill")
@@ -426,9 +429,9 @@ struct MediaModule: View {
                 .buttonStyle(PlainButtonStyle())
                 
                 Button(action: { data.sendSpotifyCommand("playpause") }) {
-                    Image(systemName: data.isMediaPlaying ? "pause.fill" : "play.fill")
+                    Image(systemName: data.isSpotifyPlaying ? "pause.fill" : "play.fill")
                         .font(.system(size: 13))
-                        .foregroundColor(.white)
+                        .foregroundColor(.green)
                 }
                 .buttonStyle(PlainButtonStyle())
                 
@@ -445,5 +448,88 @@ struct MediaModule: View {
         .background(isHovering ? Color.white.opacity(0.1) : Color.clear)
         .cornerRadius(8)
         .onHover { hovering in isHovering = hovering }
+    }
+}
+
+struct MediaModule: View {
+    @State private var isHovering = false
+    @ObservedObject var data = WidgetDataManager.shared
+    
+    // Media key codes (NX_KEYTYPE)
+    private let playPauseKey: Int32 = 16
+    private let nextKey: Int32 = 17
+    private let previousKey: Int32 = 18
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            HStack(spacing: 8) {
+                Image(systemName: sourceIcon)
+                    .foregroundColor(sourceColor)
+                    .font(.system(size: 18))
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(data.mediaSource.isEmpty ? "Media" : data.mediaSource)
+                        .font(.system(size: 9))
+                        .foregroundColor(.gray)
+                        .lineLimit(1)
+                    Text(data.mediaTrack)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                    if !data.mediaArtist.isEmpty {
+                        Text(data.mediaArtist)
+                            .font(.system(size: 9))
+                            .foregroundColor(.gray.opacity(0.8))
+                            .lineLimit(1)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            
+            HStack(spacing: 12) {
+                Button(action: { data.simulateMediaKey(previousKey) }) {
+                    Image(systemName: "backward.fill")
+                        .font(.system(size: 11))
+                        .foregroundColor(.white.opacity(0.8))
+                }
+                .buttonStyle(PlainButtonStyle())
+                
+                Button(action: { data.simulateMediaKey(playPauseKey) }) {
+                    Image(systemName: data.isMediaPlaying ? "pause.fill" : "play.fill")
+                        .font(.system(size: 13))
+                        .foregroundColor(.white)
+                }
+                .buttonStyle(PlainButtonStyle())
+                
+                Button(action: { data.simulateMediaKey(nextKey) }) {
+                    Image(systemName: "forward.fill")
+                        .font(.system(size: 11))
+                        .foregroundColor(.white.opacity(0.8))
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+        }
+        .frame(width: 152)
+        .padding(6)
+        .background(isHovering ? Color.white.opacity(0.1) : Color.clear)
+        .cornerRadius(8)
+        .onHover { hovering in isHovering = hovering }
+    }
+    
+    private var sourceIcon: String {
+        switch data.mediaSource {
+        case "Spotify": return "music.note"
+        case "Apple Music": return "music.quarternote.3"
+        case "Apple TV": return "tv"
+        default: return "music.note.list"
+        }
+    }
+    
+    private var sourceColor: Color {
+        switch data.mediaSource {
+        case "Spotify": return .green
+        case "Apple Music": return .pink
+        case "Apple TV": return .blue
+        default: return .purple
+        }
     }
 }

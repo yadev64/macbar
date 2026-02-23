@@ -13,8 +13,11 @@ echo "Building $APP_NAME..."
 mkdir -p "$MACOS_DIR"
 mkdir -p "$RESOURCES_DIR"
 
-# Compile Swift files
-swiftc -o "$MACOS_DIR/$APP_NAME" ./*.swift
+# Compile Swift files (exclude helper scripts that run separately)
+swiftc -o "$MACOS_DIR/$APP_NAME" $(ls ./*.swift | grep -v nowplaying_helper)
+
+# Copy helper scripts to Resources
+cp nowplaying_helper.swift "$RESOURCES_DIR/"
 
 # Generate .icns from icon.png
 if [ -f "icon.png" ]; then

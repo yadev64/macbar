@@ -23,6 +23,7 @@ struct ContentView: View {
             switch mod {
             case "Clock": totalModuleWidths += 130
             case "Media": totalModuleWidths += 172
+            case "Spotify": totalModuleWidths += 172
             case "Battery": totalModuleWidths += 95
             case "AirDrop": totalModuleWidths += 110
             case "Calendar": totalModuleWidths += 152
@@ -167,6 +168,8 @@ struct ContentView: View {
             ClockModule()
         case "Media":
             MediaModule()
+        case "Spotify":
+            SpotifyModule()
         case "AirDrop":
             AirDropModule()
         case "Calendar":
