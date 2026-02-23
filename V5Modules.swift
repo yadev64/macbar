@@ -284,6 +284,8 @@ struct AirPodsModule: View {
 
 struct ScreenTimeModule: View {
     @State private var isHovering = false
+    @ObservedObject var data = WidgetDataManager.shared
+    
     var body: some View {
         Button(action: {
             let process = Process()
@@ -296,12 +298,15 @@ struct ScreenTimeModule: View {
                     .foregroundColor(.indigo)
                     .font(.system(size: 20))
                 VStack(alignment: .center) {
-                    Text("Screen Time")
-                        .font(.footnote)
+                    Text("Active")
+                        .font(.system(size: 9))
                         .foregroundColor(.gray)
-                    Text("Launcher")
-                        .font(.caption)
+                    Text(data.screenTime)
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
                         .foregroundColor(.white)
+                    Text("today")
+                        .font(.system(size: 8))
+                        .foregroundColor(.gray.opacity(0.7))
                 }
             }
             .padding(6)
@@ -540,15 +545,15 @@ struct StatsBarView: View {
                 .font(.system(size: 9, weight: .semibold, design: .monospaced))
                 .foregroundColor(.white.opacity(0.9))
             statDivider
-            statItem(icon: "calendar", color: .red, value: data.calendarData)
+            clickableStatItem(icon: "calendar", color: .red, value: data.calendarData, app: "Calendar")
             statDivider
-            statItem(icon: "cpu", color: .green, value: data.cpuUsage)
+            clickableStatItem(icon: "cpu", color: .green, value: data.cpuUsage, app: "Activity Monitor")
             statDivider
-            statItem(icon: "memorychip", color: .purple, value: data.ramUsage)
+            clickableStatItem(icon: "memorychip", color: .purple, value: data.ramUsage, app: "Activity Monitor")
             statDivider
-            statItem(icon: "internaldrive", color: .gray, value: data.freeStorage)
+            clickableStatItem(icon: "internaldrive", color: .gray, value: data.freeStorage, app: "Disk Utility")
             statDivider
-            statItem(icon: "battery.75percent", color: .green, value: data.batteryLevel)
+            clickableStatItem(icon: "battery.75percent", color: .green, value: data.batteryLevel, appURL: "x-apple.systempreferences:com.apple.preference.battery")
         }
         .padding(.horizontal, 16)
     }
@@ -559,7 +564,32 @@ struct StatsBarView: View {
             .frame(width: 1, height: 10)
     }
     
-    private func statItem(icon: String, color: Color, value: String) -> some View {
+    private func clickableStatItem(icon: String, color: Color, value: String, app: String) -> some View {
+        StatItemView(icon: icon, color: color, value: value) {
+            let p = Process()
+            p.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+            p.arguments = ["-a", app]
+            try? p.run()
+        }
+    }
+    
+    private func clickableStatItem(icon: String, color: Color, value: String, appURL: String) -> some View {
+        StatItemView(icon: icon, color: color, value: value) {
+            if let url = URL(string: appURL) {
+                NSWorkspace.shared.open(url)
+            }
+        }
+    }
+}
+
+struct StatItemView: View {
+    let icon: String
+    let color: Color
+    let value: String
+    let action: () -> Void
+    @State private var isHovering = false
+    
+    var body: some View {
         HStack(spacing: 4) {
             Image(systemName: icon)
                 .font(.system(size: 8))
@@ -569,5 +599,14 @@ struct StatsBarView: View {
                 .foregroundColor(.white.opacity(0.8))
                 .lineLimit(1)
         }
+        .padding(.horizontal, 4)
+        .padding(.vertical, 2)
+        .background(
+            RoundedRectangle(cornerRadius: 4)
+                .fill(isHovering ? Color.white.opacity(0.1) : Color.clear)
+        )
+        .contentShape(Rectangle())
+        .onHover { h in isHovering = h }
+        .onTapGesture { action() }
     }
 }

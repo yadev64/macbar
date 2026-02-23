@@ -9,7 +9,7 @@ struct ContentView: View {
     @AppStorage("leftModulesListV2") private var leftModules: [String] = ["CPU", "RAM", "Storage"]
     @AppStorage("rightModulesListV2") private var rightModules: [String] = ["Calendar", "Media", "Weather"]
     @AppStorage("notchWidth") private var notchWidth: Double = 600.0
-    @AppStorage("barHeight") private var barHeight: Double = 110
+    @AppStorage("barHeight") private var barHeight: Double = 120
     @AppStorage("barCornerRadius") private var barCornerRadius: Double = 20
     @AppStorage("barOpacity") private var barOpacity: Double = 100
     @AppStorage("showClock") private var showClock: Bool = true
@@ -149,12 +149,12 @@ struct ContentView: View {
             .background(
                 RoundedRectangle(cornerRadius: CGFloat(barCornerRadius), style: .continuous)
                     .fill(Color.black.opacity(barOpacity / 100))
-                    .padding(.top, -20) 
+                    .padding(.top, -40) 
             )
             .overlay(
                 RoundedRectangle(cornerRadius: CGFloat(barCornerRadius), style: .continuous)
                     .stroke(isTargeted ? Color.blue : Color.clear, lineWidth: 2)
-                    .padding(.top, -20)
+                    .padding(.top, -40)
             )
             .animation(.spring(response: 0.4, dampingFraction: 0.6, blendDuration: 0), value: hoverObserver.isHovering)
             
@@ -162,7 +162,7 @@ struct ContentView: View {
             Spacer(minLength: 0)
         }
         // Frame the entire VStack (safe area + dynamic content) using a wider 2800pt canvas
-        .frame(width: 2800, height: 120, alignment: .top)
+        .frame(width: 2800, height: 180, alignment: .top)
         // Ensure SwiftUI view respects safe area / borderless
         .edgesIgnoringSafeArea(.all)
         .onDrop(of: [UTType.fileURL], isTargeted: $isTargeted) { providers in

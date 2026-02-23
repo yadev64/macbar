@@ -18,6 +18,7 @@ class WidgetDataManager: ObservableObject {
     @Published var freeStorage: String = "Calculating..."
     @Published var networkName: String = "Searching..."
     @Published var batteryLevel: String = "–"
+    @Published var screenTime: String = "–"
     @Published var mediaTrack: String = "Not Playing"
     @Published var mediaArtist: String = ""
     @Published var isMediaPlaying: Bool = false
@@ -59,6 +60,7 @@ class WidgetDataManager: ObservableObject {
         fetchSpotify()
         fetchNowPlaying()
         fetchBattery()
+        fetchScreenTime()
     }
     
     private func startTimers() {
@@ -80,6 +82,7 @@ class WidgetDataManager: ObservableObject {
         Timer.publish(every: 3, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchSpotify() }.store(in: &cancellables)
         Timer.publish(every: 3, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchNowPlaying() }.store(in: &cancellables)
         Timer.publish(every: 60, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchBattery() }.store(in: &cancellables)
+        Timer.publish(every: 60, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchScreenTime() }.store(in: &cancellables)
     }
 
     private func fetchCalendar() {
@@ -572,4 +575,91 @@ class WidgetDataManager: ObservableObject {
             }
         }
     }
+    
+    private func fetchScreenTime() {
+        DispatchQueue.global(qos: .background).async {
+            // Use shell pipeline to get display on/off events
+            let task = Process()
+            let pipe = Pipe()
+            task.executableURL = URL(fileURLWithPath: "/bin/sh")
+            task.arguments = ["-c", "pmset -g log | grep 'Display is turned'"]
+            task.standardOutput = pipe
+            task.standardError = Pipe()
+            try? task.run()
+            task.waitUntilExit()
+            
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            let output = String(data: data, encoding: .utf8) ?? ""
+            
+            let now = Date()
+            let calendar = Calendar.current
+            let startOfToday = calendar.startOfDay(for: now)
+            
+            let df = DateFormatter()
+            df.dateFormat = "yyyy-MM-dd HH:mm:ss Z"
+            df.locale = Locale(identifier: "en_US_POSIX")
+            
+            struct DisplayEvent {
+                let date: Date
+                let isOn: Bool
+            }
+            
+            // Parse ALL events (including yesterday's last event for carry-over)
+            var allEvents: [DisplayEvent] = []
+            for line in output.components(separatedBy: "\n") {
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                guard trimmed.count >= 25 else { continue }
+                let timestampStr = String(trimmed.prefix(25))
+                guard let date = df.date(from: timestampStr) else { continue }
+                let isOn = line.contains("turned on")
+                allEvents.append(DisplayEvent(date: date, isOn: isOn))
+            }
+            allEvents.sort { $0.date < $1.date }
+            
+            // Find the last event before today to determine initial state
+            var displayWasOn = false
+            for event in allEvents {
+                if event.date >= startOfToday { break }
+                displayWasOn = event.isOn
+            }
+            
+            // Filter to today's events only
+            let todayEvents = allEvents.filter { $0.date >= startOfToday }
+            
+            // Sum display-on time
+            var totalOnSeconds: TimeInterval = 0
+            var lastOnTime: Date? = displayWasOn ? startOfToday : nil
+            
+            for event in todayEvents {
+                if event.isOn {
+                    lastOnTime = event.date
+                } else if let onTime = lastOnTime {
+                    totalOnSeconds += event.date.timeIntervalSince(onTime)
+                    lastOnTime = nil
+                }
+            }
+            
+            // If display is currently on, count up to now
+            if let onTime = lastOnTime {
+                totalOnSeconds += now.timeIntervalSince(onTime)
+            }
+            
+            let formatted = self.formatDuration(totalOnSeconds)
+            DispatchQueue.main.async {
+                self.screenTime = formatted
+            }
+        }
+    }
+    
+    private func formatDuration(_ seconds: Double) -> String {
+        let totalMinutes = Int(seconds) / 60
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+        if hours > 0 {
+            return "\(hours)h \(minutes)m"
+        } else {
+            return "\(minutes)m"
+        }
+    }
 }
+
