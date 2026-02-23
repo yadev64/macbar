@@ -32,7 +32,6 @@ class WidgetDataManager: ObservableObject {
     
     private init() {
         fetchAllData()
-        startTimers()
         
         // Re-fetch everything when waking from sleep (network may take a moment)
         NotificationCenter.default.addObserver(
@@ -63,26 +62,57 @@ class WidgetDataManager: ObservableObject {
         fetchScreenTime()
     }
     
-    private func startTimers() {
-        Timer.publish(every: 30, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchCalendar() }.store(in: &cancellables)
-        Timer.publish(every: 1800, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchWeather() }.store(in: &cancellables)
-        // If weather shows N/A, retry every 30s until it succeeds
-        Timer.publish(every: 30, on: .main, in: .common).autoconnect().sink { [weak self] _ in
-            if self?.weatherData == "N/A" || self?.weatherData == "Fetching..." {
-                self?.fetchWeather()
+    // MARK: - Energy optimization: only fetch when notch is visible
+    var isVisible: Bool = false {
+        didSet {
+            if isVisible && !oldValue {
+                // Just became visible — do an immediate refresh and start timers
+                fetchAllData()
+                startVisibleTimers()
+            } else if !isVisible && oldValue {
+                // Just collapsed — stop everything
+                stopVisibleTimers()
             }
-        }.store(in: &cancellables)
-        Timer.publish(every: 3, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchCPU() }.store(in: &cancellables)
-        Timer.publish(every: 3, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchRAM() }.store(in: &cancellables)
-        Timer.publish(every: 60, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchNote() }.store(in: &cancellables)
-        Timer.publish(every: 60, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchReminder() }.store(in: &cancellables)
-        Timer.publish(every: 10, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchAirPods() }.store(in: &cancellables)
-        Timer.publish(every: 60, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchStorage() }.store(in: &cancellables)
-        Timer.publish(every: 5, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchNetwork() }.store(in: &cancellables)
-        Timer.publish(every: 3, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchSpotify() }.store(in: &cancellables)
-        Timer.publish(every: 3, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchNowPlaying() }.store(in: &cancellables)
-        Timer.publish(every: 60, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchBattery() }.store(in: &cancellables)
-        Timer.publish(every: 60, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchScreenTime() }.store(in: &cancellables)
+        }
+    }
+    
+    private var visibleCancellables = Set<AnyCancellable>()
+    
+    private func startVisibleTimers() {
+        stopVisibleTimers()
+        // Fast-updating data (only while expanded)
+        Timer.publish(every: 10, on: .main, in: .common).autoconnect().sink { [weak self] _ in
+            guard self?.isVisible == true else { return }
+            self?.fetchCPU()
+            self?.fetchRAM()
+        }.store(in: &visibleCancellables)
+        Timer.publish(every: 5, on: .main, in: .common).autoconnect().sink { [weak self] _ in
+            guard self?.isVisible == true else { return }
+            self?.fetchSpotify()
+            self?.fetchNowPlaying()
+        }.store(in: &visibleCancellables)
+        Timer.publish(every: 15, on: .main, in: .common).autoconnect().sink { [weak self] _ in
+            guard self?.isVisible == true else { return }
+            self?.fetchNetwork()
+        }.store(in: &visibleCancellables)
+        // Slower data (still only while expanded)
+        Timer.publish(every: 30, on: .main, in: .common).autoconnect().sink { [weak self] _ in
+            guard self?.isVisible == true else { return }
+            self?.fetchCalendar()
+        }.store(in: &visibleCancellables)
+        Timer.publish(every: 60, on: .main, in: .common).autoconnect().sink { [weak self] _ in
+            guard self?.isVisible == true else { return }
+            self?.fetchAirPods()
+            self?.fetchBattery()
+            self?.fetchStorage()
+            self?.fetchNote()
+            self?.fetchReminder()
+        }.store(in: &visibleCancellables)
+    }
+    
+    private func stopVisibleTimers() {
+        visibleCancellables.forEach { $0.cancel() }
+        visibleCancellables.removeAll()
     }
 
     private func fetchCalendar() {
@@ -320,12 +350,20 @@ class WidgetDataManager: ObservableObject {
                 end if
             end tell
             """
-            var error: NSDictionary?
-            if let appleScript = NSAppleScript(source: script) {
-                let result = appleScript.executeAndReturnError(&error)
-                if let output = result.stringValue {
-                    DispatchQueue.main.async { self.recentNote = output }
-                }
+            let task = Process()
+            let pipe = Pipe()
+            task.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+            task.arguments = ["-e", script]
+            task.standardOutput = pipe
+            task.standardError = Pipe()
+            try? task.run()
+            task.waitUntilExit()
+            
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            if let output = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines), !output.isEmpty {
+                DispatchQueue.main.async { self.recentNote = output }
+            } else {
+                DispatchQueue.main.async { self.recentNote = "No Notes" }
             }
         }
     }
@@ -342,12 +380,20 @@ class WidgetDataManager: ObservableObject {
                 end if
             end tell
             """
-            var error: NSDictionary?
-            if let appleScript = NSAppleScript(source: script) {
-                let result = appleScript.executeAndReturnError(&error)
-                if let output = result.stringValue {
-                    DispatchQueue.main.async { self.nextReminder = output }
-                }
+            let task = Process()
+            let pipe = Pipe()
+            task.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+            task.arguments = ["-e", script]
+            task.standardOutput = pipe
+            task.standardError = Pipe()
+            try? task.run()
+            task.waitUntilExit()
+            
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            if let output = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines), !output.isEmpty {
+                DispatchQueue.main.async { self.nextReminder = output }
+            } else {
+                DispatchQueue.main.async { self.nextReminder = "All clear" }
             }
         }
     }

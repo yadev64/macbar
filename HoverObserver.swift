@@ -70,6 +70,8 @@ class HoverObserver: ObservableObject {
                 let workItem = DispatchWorkItem {
                     self.isHovering = isInside
                     window.ignoresMouseEvents = !isInside
+                    // Toggle fast data fetching based on visibility
+                    WidgetDataManager.shared.isVisible = isInside
                 }
                 
                 // Fast open, slow close.
