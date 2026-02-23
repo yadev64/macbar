@@ -455,10 +455,8 @@ struct MediaModule: View {
     @State private var isHovering = false
     @ObservedObject var data = WidgetDataManager.shared
     
-    // Media key codes (NX_KEYTYPE)
-    private let playPauseKey: Int32 = 16
-    private let nextKey: Int32 = 17
-    private let previousKey: Int32 = 18
+    // MRMediaRemote command codes
+    // 0=Play, 1=Pause, 2=TogglePlayPause, 4=NextTrack, 5=PreviousTrack
     
     var body: some View {
         VStack(spacing: 4) {
@@ -486,21 +484,21 @@ struct MediaModule: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             
             HStack(spacing: 12) {
-                Button(action: { data.simulateMediaKey(previousKey) }) {
+                Button(action: { data.sendMediaCommand(5) }) {
                     Image(systemName: "backward.fill")
                         .font(.system(size: 11))
                         .foregroundColor(.white.opacity(0.8))
                 }
                 .buttonStyle(PlainButtonStyle())
                 
-                Button(action: { data.simulateMediaKey(playPauseKey) }) {
+                Button(action: { data.sendMediaCommand(2) }) {
                     Image(systemName: data.isMediaPlaying ? "pause.fill" : "play.fill")
                         .font(.system(size: 13))
                         .foregroundColor(.white)
                 }
                 .buttonStyle(PlainButtonStyle())
                 
-                Button(action: { data.simulateMediaKey(nextKey) }) {
+                Button(action: { data.sendMediaCommand(4) }) {
                     Image(systemName: "forward.fill")
                         .font(.system(size: 11))
                         .foregroundColor(.white.opacity(0.8))

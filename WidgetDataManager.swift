@@ -440,34 +440,19 @@ class WidgetDataManager: ObservableObject {
         }
     }
     
-    // Simulate macOS media keys (works system-wide for any media app)
-    func simulateMediaKey(_ key: Int32) {
+    // Send system-wide media commands via MediaRemote framework
+    // Commands: 0=Play, 1=Pause, 2=TogglePlayPause, 4=NextTrack, 5=PreviousTrack
+    func sendMediaCommand(_ command: UInt32) {
         DispatchQueue.global(qos: .background).async {
-            let keyDown = NSEvent.otherEvent(
-                with: .systemDefined,
-                location: .zero,
-                modifierFlags: NSEvent.ModifierFlags(rawValue: 0xa00),
-                timestamp: 0,
-                windowNumber: 0,
-                context: nil,
-                subtype: 8,
-                data1: Int((key << 16) | (0xa << 8)),
-                data2: -1
-            )
-            let keyUp = NSEvent.otherEvent(
-                with: .systemDefined,
-                location: .zero,
-                modifierFlags: NSEvent.ModifierFlags(rawValue: 0xb00),
-                timestamp: 0,
-                windowNumber: 0,
-                context: nil,
-                subtype: 8,
-                data1: Int((key << 16) | (0xb << 8)),
-                data2: -1
-            )
-            keyDown?.cgEvent?.post(tap: .cghidEventTap)
-            keyUp?.cgEvent?.post(tap: .cghidEventTap)
-            // Re-fetch after a short delay
+            let path = "/System/Library/PrivateFrameworks/MediaRemote.framework/MediaRemote"
+            guard let handle = dlopen(path, RTLD_NOW),
+                  let sym = dlsym(handle, "MRMediaRemoteSendCommand") else { return }
+            
+            typealias SendCmdFn = @convention(c) (UInt32, AnyObject?) -> Bool
+            let sendCmd = unsafeBitCast(sym, to: SendCmdFn.self)
+            _ = sendCmd(command, nil)
+            
+            // Re-fetch after a short delay to update UI
             DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + 0.5) {
                 self.fetchNowPlaying()
             }
