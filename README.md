@@ -1,4 +1,7 @@
-# 🖤 macbar
+
+<img width="101" height="101" alt="icon" src="https://github.com/user-attachments/assets/e4a7959d-0543-4913-a5f5-4b9e50a88704" />
+
+# macbar
 
 **Your Mac's notch just got superpowers.**
 
@@ -30,7 +33,7 @@ macbar turns that boring camera cutout into a dynamic, expandable command center
 
 When collapsed, macbar is invisible — it *is* your notch. Hover over it and it smoothly expands into a sleek bar showing your chosen widgets:
 
-<img width="1512" height="982" alt="Screenshot 2026-02-23 at 9 53 21 AM" src="https://github.com/user-attachments/assets/798565a0-b893-4ea1-b4fa-c42eb4e536a9" />
+<img width="1512" height="982" alt="Screenshot 2026-02-23 at 9 58 12 AM" src="https://github.com/user-attachments/assets/ab3bc99e-4bc1-40b4-8350-3671ae6c62c2" />
 
 ---
 
