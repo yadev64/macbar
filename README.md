@@ -39,7 +39,7 @@ macbar turns that boring camera cutout into a dynamic, expandable command center
 
 When collapsed, macbar is invisible — it *is* your notch. Hover over it and it smoothly expands into a sleek bar showing your chosen widgets:
 
-<img width="1512" height="982" alt="Screenshot 2026-02-23 at 9 58 12 AM" src="https://github.com/user-attachments/assets/ab3bc99e-4bc1-40b4-8350-3671ae6c62c2" />
+<img width="3024" height="1964" alt="ss" src="https://github.com/user-attachments/assets/039ab9c0-7961-4884-9404-5b6b1faea811" />
 
 ---
 
