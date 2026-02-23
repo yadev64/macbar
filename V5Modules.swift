@@ -13,7 +13,7 @@ struct AirDropModule: View {
                 Image(systemName: "airdrop")
                     .foregroundColor(.blue)
                     .font(.system(size: 20))
-                VStack(alignment: .leading) {
+                VStack(alignment: .center) {
                     Text("AirDrop")
                         .font(.footnote)
                         .foregroundColor(.gray)
@@ -46,7 +46,7 @@ struct CalendarModule: View {
                 Image(systemName: "calendar")
                     .foregroundColor(.red)
                     .font(.system(size: 20))
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .center, spacing: 2) {
                     Text(data.calendarData)
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundColor(.white)
@@ -65,7 +65,7 @@ struct CalendarModule: View {
                     }
                 }
             }
-            .frame(width: 140, alignment: .leading)
+            .frame(width: 140, alignment: .center)
             .padding(6)
             .background(isHovering ? Color.white.opacity(0.1) : Color.clear)
             .cornerRadius(8)
@@ -90,7 +90,7 @@ struct WeatherModule: View {
                 Image(systemName: "cloud.sun.fill")
                     .symbolRenderingMode(.multicolor)
                     .font(.system(size: 20))
-                VStack(alignment: .leading) {
+                VStack(alignment: .center) {
                     Text("Weather")
                         .font(.footnote)
                         .foregroundColor(.gray)
@@ -99,7 +99,7 @@ struct WeatherModule: View {
                         .foregroundColor(.white)
                 }
             }
-            .frame(width: 150, alignment: .leading)
+            .frame(width: 150, alignment: .center)
             .padding(6)
             .background(isHovering ? Color.white.opacity(0.1) : Color.clear)
             .cornerRadius(8)
@@ -124,7 +124,7 @@ struct CPUModule: View {
                 Image(systemName: "cpu")
                     .foregroundColor(.green)
                     .font(.system(size: 20))
-                VStack(alignment: .leading) {
+                VStack(alignment: .center) {
                     Text("CPU")
                         .font(.footnote)
                         .foregroundColor(.gray)
@@ -133,7 +133,7 @@ struct CPUModule: View {
                         .foregroundColor(.white)
                 }
             }
-            .frame(width: 100, alignment: .leading)
+            .frame(width: 100, alignment: .center)
             .padding(6)
             .background(isHovering ? Color.white.opacity(0.1) : Color.clear)
             .cornerRadius(8)
@@ -158,7 +158,7 @@ struct RAMModule: View {
                 Image(systemName: "memorychip")
                     .foregroundColor(.purple)
                     .font(.system(size: 20))
-                VStack(alignment: .leading) {
+                VStack(alignment: .center) {
                     Text("RAM")
                         .font(.footnote)
                         .foregroundColor(.gray)
@@ -167,7 +167,7 @@ struct RAMModule: View {
                         .foregroundColor(.white)
                 }
             }
-            .frame(width: 100, alignment: .leading)
+            .frame(width: 100, alignment: .center)
             .padding(6)
             .background(isHovering ? Color.white.opacity(0.1) : Color.clear)
             .cornerRadius(8)
@@ -192,7 +192,7 @@ struct NotesModule: View {
                 Image(systemName: "note.text")
                     .foregroundColor(.yellow)
                     .font(.system(size: 20))
-                VStack(alignment: .leading) {
+                VStack(alignment: .center) {
                     Text("Recent Note")
                         .font(.footnote)
                         .foregroundColor(.gray)
@@ -202,7 +202,7 @@ struct NotesModule: View {
                         .lineLimit(1)
                 }
             }
-            .frame(width: 140, alignment: .leading)
+            .frame(width: 140, alignment: .center)
             .padding(6)
             .background(isHovering ? Color.white.opacity(0.1) : Color.clear)
             .cornerRadius(8)
@@ -227,7 +227,7 @@ struct RemindersModule: View {
                 Image(systemName: "list.bullet.circle.fill")
                     .foregroundColor(.orange)
                     .font(.system(size: 20))
-                VStack(alignment: .leading) {
+                VStack(alignment: .center) {
                     Text("Reminders")
                         .font(.footnote)
                         .foregroundColor(.gray)
@@ -237,7 +237,7 @@ struct RemindersModule: View {
                         .lineLimit(1)
                 }
             }
-            .frame(width: 140, alignment: .leading)
+            .frame(width: 140, alignment: .center)
             .padding(6)
             .background(isHovering ? Color.white.opacity(0.1) : Color.clear)
             .cornerRadius(8)
@@ -262,7 +262,7 @@ struct AirPodsModule: View {
                 Image(systemName: "airpodspro")
                     .foregroundColor(.white)
                     .font(.system(size: 20))
-                VStack(alignment: .leading) {
+                VStack(alignment: .center) {
                     Text("AirPods")
                         .font(.footnote)
                         .foregroundColor(.gray)
@@ -272,7 +272,7 @@ struct AirPodsModule: View {
                         .lineLimit(1)
                 }
             }
-            .frame(width: 120, alignment: .leading)
+            .frame(width: 120, alignment: .center)
             .padding(6)
             .background(isHovering ? Color.white.opacity(0.1) : Color.clear)
             .cornerRadius(8)
@@ -295,7 +295,7 @@ struct ScreenTimeModule: View {
                 Image(systemName: "hourglass")
                     .foregroundColor(.indigo)
                     .font(.system(size: 20))
-                VStack(alignment: .leading) {
+                VStack(alignment: .center) {
                     Text("Screen Time")
                         .font(.footnote)
                         .foregroundColor(.gray)
@@ -328,7 +328,7 @@ struct StorageModule: View {
                 Image(systemName: "internaldrive")
                     .foregroundColor(.gray)
                     .font(.system(size: 20))
-                VStack(alignment: .leading) {
+                VStack(alignment: .center) {
                     Text("Macintosh HD")
                         .font(.footnote)
                         .foregroundColor(.gray)
@@ -337,7 +337,7 @@ struct StorageModule: View {
                         .foregroundColor(.white)
                 }
             }
-            .frame(width: 140, alignment: .leading)
+            .frame(width: 140, alignment: .center)
             .padding(6)
             .background(isHovering ? Color.white.opacity(0.1) : Color.clear)
             .cornerRadius(8)
@@ -362,7 +362,7 @@ struct NetworkModule: View {
                 Image(systemName: "network")
                     .foregroundColor(.cyan)
                     .font(.system(size: 20))
-                VStack(alignment: .leading) {
+                VStack(alignment: .center) {
                     Text("Wi-Fi")
                         .font(.footnote)
                         .foregroundColor(.gray)
@@ -372,7 +372,7 @@ struct NetworkModule: View {
                         .lineLimit(1)
                 }
             }
-            .frame(width: 130, alignment: .leading)
+            .frame(width: 130, alignment: .center)
             .padding(6)
             .background(isHovering ? Color.white.opacity(0.1) : Color.clear)
             .cornerRadius(8)
@@ -392,7 +392,7 @@ struct SpotifyModule: View {
                 Image(systemName: "music.note")
                     .foregroundColor(.green)
                     .font(.system(size: 18))
-                VStack(alignment: .leading, spacing: 1) {
+                VStack(alignment: .center, spacing: 1) {
                     Text("Spotify")
                         .font(.system(size: 9, weight: .semibold))
                         .foregroundColor(.green.opacity(0.8))
@@ -409,7 +409,7 @@ struct SpotifyModule: View {
                 }
                 Spacer()
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .center)
             .contentShape(Rectangle())
             .onTapGesture {
                 let process = Process()
@@ -462,7 +462,7 @@ struct MediaModule: View {
                 Image(systemName: sourceIcon)
                     .foregroundColor(sourceColor)
                     .font(.system(size: 18))
-                VStack(alignment: .leading, spacing: 1) {
+                VStack(alignment: .center, spacing: 1) {
                     Text(data.mediaSource.isEmpty ? "Media" : data.mediaSource)
                         .font(.system(size: 9))
                         .foregroundColor(.gray)
@@ -479,7 +479,7 @@ struct MediaModule: View {
                     }
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .center)
             
             HStack(spacing: 12) {
                 Button(action: { data.sendMediaCommand(5) }) {
