@@ -17,6 +17,7 @@ class WidgetDataManager: ObservableObject {
     @Published var airPodsData: String = "Disconnected"
     @Published var freeStorage: String = "Calculating..."
     @Published var networkName: String = "Searching..."
+    @Published var batteryLevel: String = "–"
     @Published var mediaTrack: String = "Not Playing"
     @Published var mediaArtist: String = ""
     @Published var isMediaPlaying: Bool = false
@@ -57,6 +58,7 @@ class WidgetDataManager: ObservableObject {
         fetchNetwork()
         fetchSpotify()
         fetchNowPlaying()
+        fetchBattery()
     }
     
     private func startTimers() {
@@ -77,6 +79,7 @@ class WidgetDataManager: ObservableObject {
         Timer.publish(every: 5, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchNetwork() }.store(in: &cancellables)
         Timer.publish(every: 3, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchSpotify() }.store(in: &cancellables)
         Timer.publish(every: 3, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchNowPlaying() }.store(in: &cancellables)
+        Timer.publish(every: 60, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchBattery() }.store(in: &cancellables)
     }
 
     private func fetchCalendar() {
@@ -543,6 +546,29 @@ class WidgetDataManager: ObservableObject {
             // Re-fetch after a short delay to update UI
             DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + 0.5) {
                 self.fetchNowPlaying()
+            }
+        }
+    }
+    
+    private func fetchBattery() {
+        DispatchQueue.global(qos: .background).async {
+            let task = Process()
+            let pipe = Pipe()
+            task.executableURL = URL(fileURLWithPath: "/usr/bin/pmset")
+            task.arguments = ["-g", "batt"]
+            task.standardOutput = pipe
+            try? task.run()
+            task.waitUntilExit()
+            
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            if let output = String(data: data, encoding: .utf8) {
+                // Parse "XX%" from pmset output
+                if let range = output.range(of: #"\d+%"#, options: .regularExpression) {
+                    let pct = String(output[range])
+                    DispatchQueue.main.async {
+                        self.batteryLevel = pct
+                    }
+                }
             }
         }
     }

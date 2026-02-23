@@ -529,3 +529,45 @@ struct MediaModule: View {
         }
     }
 }
+
+// MARK: - Compact Stats Bar (top row)
+struct StatsBarView: View {
+    @ObservedObject var data = WidgetDataManager.shared
+    
+    var body: some View {
+        HStack(spacing: 14) {
+            Text(Date(), style: .time)
+                .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                .foregroundColor(.white.opacity(0.9))
+            statDivider
+            statItem(icon: "calendar", color: .red, value: data.calendarData)
+            statDivider
+            statItem(icon: "cpu", color: .green, value: data.cpuUsage)
+            statDivider
+            statItem(icon: "memorychip", color: .purple, value: data.ramUsage)
+            statDivider
+            statItem(icon: "internaldrive", color: .gray, value: data.freeStorage)
+            statDivider
+            statItem(icon: "battery.75percent", color: .green, value: data.batteryLevel)
+        }
+        .padding(.horizontal, 16)
+    }
+    
+    private var statDivider: some View {
+        Rectangle()
+            .fill(Color.white.opacity(0.15))
+            .frame(width: 1, height: 10)
+    }
+    
+    private func statItem(icon: String, color: Color, value: String) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 8))
+                .foregroundColor(color)
+            Text(value)
+                .font(.system(size: 9, weight: .medium, design: .monospaced))
+                .foregroundColor(.white.opacity(0.8))
+                .lineLimit(1)
+        }
+    }
+}

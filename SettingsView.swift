@@ -364,9 +364,19 @@ struct AppearanceTab: View {
     @AppStorage("barHeight") private var barHeight: Double = 85
     @AppStorage("barCornerRadius") private var barCornerRadius: Double = 20
     @AppStorage("barOpacity") private var barOpacity: Double = 95
+    @AppStorage("showStatsBar") private var showStatsBar: Bool = false
     
     var body: some View {
         Form {
+            Section {
+                Toggle("Show Stats Bar", isOn: $showStatsBar)
+                Text("Adds a compact row of CPU, RAM, Storage, Battery, and Date above your widgets.")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            } header: {
+                Label("Stats Bar", systemImage: "chart.bar")
+            }
+            
             Section {
                 VStack(alignment: .leading) {
                     HStack {

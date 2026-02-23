@@ -13,11 +13,12 @@ struct ContentView: View {
     @AppStorage("barCornerRadius") private var barCornerRadius: Double = 20
     @AppStorage("barOpacity") private var barOpacity: Double = 100
     @AppStorage("showClock") private var showClock: Bool = true
+    @AppStorage("showStatsBar") private var showStatsBar: Bool = true
     
     // Dynamic width calculation
     private var dynamicWidth: CGFloat {
         let hStackPadding: CGFloat = 50 // .padding(.horizontal, 25)
-        let timeWidth: CGFloat = 85 // generous for different time formats
+        let timeWidth: CGFloat = showClock ? 85 : 0
         let hStackSpacing: CGFloat = 16 // Gap
         
         let allModules = leftModules + rightModules
@@ -46,7 +47,12 @@ struct ContentView: View {
         
         // Gap for time is 2 gaps if time is there. Total elements = count + 1. So gaps = count.
         let calculated = hStackPadding + timeWidth + totalModuleWidths + (CGFloat(allModules.count) * hStackSpacing)
-        return allModules.isEmpty ? 160 : calculated
+        let minStatsWidth: CGFloat = showStatsBar ? 500 : 160
+        return allModules.isEmpty ? minStatsWidth : max(calculated, minStatsWidth)
+    }
+    
+    private var expandedHeight: CGFloat {
+        showStatsBar ? CGFloat(barHeight) + 22 : CGFloat(barHeight)
     }
     
     var body: some View {
@@ -54,52 +60,66 @@ struct ContentView: View {
             ZStack {
                 // Content
                 if hoverObserver.isHovering {
-                    HStack(spacing: 16) {
-                        
-                        // LEFT MODULES
-                        ForEach(leftModules, id: \.self) { mod in
-                            buildModule(name: mod)
-                                .id(mod)
+                    VStack(spacing: 0) {
+                        // STATS BAR (compact top row)
+                        if showStatsBar {
+                            StatsBarView()
+                                .padding(.top, 6)
+                            
+                            Rectangle()
+                                .fill(Color.white.opacity(0.08))
+                                .frame(height: 1)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 3)
                         }
                         
-                        // CENTER TIME
-                        if showClock {
-                            Text(Date(), style: .time)
-                                .font(.system(size: 14, weight: .medium, design: .rounded))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 4)
-                        }
-                        
-                        // RIGHT MODULES (Or Drop Shelf if dragging)
-                        if isTargeted || draggedItemName != nil {
-                            HStack {
-                                if let iName = draggedItemName {
-                                    Image(systemName: "doc.fill")
-                                        .foregroundColor(.blue)
-                                    Text(iName)
-                                        .font(.caption)
-                                        .foregroundColor(.white)
-                                        .lineLimit(1)
-                                        .frame(maxWidth: 80)
-                                } else {
-                                    Image(systemName: "tray.and.arrow.down")
-                                        .foregroundColor(isTargeted ? .blue : .gray)
-                                    Text("Drop Files Here")
-                                        .font(.caption)
-                                        .foregroundColor(.gray)
-                                }
-                            }
-                            .padding(8)
-                            .background(Color.white.opacity(0.1))
-                            .cornerRadius(8)
-                        } else {
-                            ForEach(rightModules.reversed(), id: \.self) { mod in
+                        // MAIN WIDGET ROW
+                        HStack(spacing: 16) {
+                            // LEFT MODULES
+                            ForEach(leftModules, id: \.self) { mod in
                                 buildModule(name: mod)
                                     .id(mod)
                             }
+                            
+                            // CENTER TIME (only if stats bar is off — otherwise time is in the stats bar)
+                            if showClock && !showStatsBar {
+                                Text(Date(), style: .time)
+                                    .font(.system(size: 14, weight: .medium, design: .rounded))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 4)
+                            }
+                            
+                            // RIGHT MODULES (Or Drop Shelf if dragging)
+                            if isTargeted || draggedItemName != nil {
+                                HStack {
+                                    if let iName = draggedItemName {
+                                        Image(systemName: "doc.fill")
+                                            .foregroundColor(.blue)
+                                        Text(iName)
+                                            .font(.caption)
+                                            .foregroundColor(.white)
+                                            .lineLimit(1)
+                                            .frame(maxWidth: 80)
+                                    } else {
+                                        Image(systemName: "tray.and.arrow.down")
+                                            .foregroundColor(isTargeted ? .blue : .gray)
+                                        Text("Drop Files Here")
+                                            .font(.caption)
+                                            .foregroundColor(.gray)
+                                    }
+                                }
+                                .padding(8)
+                                .background(Color.white.opacity(0.1))
+                                .cornerRadius(8)
+                            } else {
+                                ForEach(rightModules.reversed(), id: \.self) { mod in
+                                    buildModule(name: mod)
+                                        .id(mod)
+                                }
+                            }
                         }
+                        .padding(.horizontal, 25)
                     }
-                    .padding(.horizontal, 25)
                     .transition(.opacity.combined(with: .scale))
                     
                     // TOP RIGHT SETTINGS BUTTON
@@ -110,7 +130,7 @@ struct ContentView: View {
                                 Image(systemName: "gearshape.fill")
                                     .foregroundColor(.gray.opacity(0.5))
                                     .font(.system(size: 12))
-                                    .padding(8) // Give it a slightly larger hit area
+                                    .padding(8)
                             }
                             .buttonStyle(PlainButtonStyle())
                             .padding(.top, 4)
@@ -125,11 +145,10 @@ struct ContentView: View {
                 }
             }
             .frame(width: hoverObserver.isHovering ? dynamicWidth : 160, 
-                   height: hoverObserver.isHovering ? CGFloat(barHeight) : 16)
+                   height: hoverObserver.isHovering ? expandedHeight : 16)
             .background(
                 RoundedRectangle(cornerRadius: CGFloat(barCornerRadius), style: .continuous)
                     .fill(Color.black.opacity(barOpacity / 100))
-                    // Push the shape upwards so top corners render off-screen, giving square top corners
                     .padding(.top, -20) 
             )
             .overlay(
