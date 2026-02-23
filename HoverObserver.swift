@@ -1,6 +1,10 @@
 import SwiftUI
 import AppKit
 
+extension Double {
+    var nonZero: Double? { self == 0 ? nil : self }
+}
+
 class HoverObserver: ObservableObject {
     @Published var isHovering: Bool = false
     
@@ -16,6 +20,11 @@ class HoverObserver: ObservableObject {
         let handler: (NSEvent) -> Void = { [weak self] event in
             guard let self = self else { return }
             
+            // Read configurable values from settings
+            let activationWidth = CGFloat(UserDefaults.standard.double(forKey: "activationWidth").nonZero ?? 200)
+            let collapseDelaySetting = UserDefaults.standard.double(forKey: "collapseDelay").nonZero ?? 0.3
+            let expandDelaySetting = UserDefaults.standard.double(forKey: "expandDelay").nonZero ?? 0.05
+            
             // Mouse location in absolute screen coordinates (bottom-left origin)
             let mouseLoc = NSEvent.mouseLocation
             
@@ -30,7 +39,7 @@ class HoverObserver: ObservableObject {
             }
             
             // TWO-PHASE hover detection:
-            // Phase 1 (collapsed): tiny activation zone right at the physical notch (200pt × 10pt)
+            // Phase 1 (collapsed): tiny activation zone right at the physical notch
             // Phase 2 (expanded): wider area covering the full notch content so user can interact
             let isInside: Bool
             if self.isHovering {
@@ -44,7 +53,6 @@ class HoverObserver: ObservableObject {
                 isInside = expandedArea.contains(mouseLoc)
             } else {
                 // Collapsed — tiny activation strip centered on the notch
-                let activationWidth: CGFloat = 200
                 let activationHeight: CGFloat = 10
                 let activationArea = NSRect(
                     x: screenRect.midX - activationWidth / 2,
@@ -64,9 +72,8 @@ class HoverObserver: ObservableObject {
                     window.ignoresMouseEvents = !isInside
                 }
                 
-                // Add a small delay for collapsing to avoid flickering if mouse slips out
                 // Fast open, slow close.
-                let delay = isInside ? 0.05 : 0.3
+                let delay = isInside ? expandDelaySetting : collapseDelaySetting
                 self.hoverTask = workItem
                 DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
             } else {

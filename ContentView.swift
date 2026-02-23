@@ -9,6 +9,10 @@ struct ContentView: View {
     @AppStorage("leftModulesListV2") private var leftModules: [String] = ["CPU", "RAM", "Storage"]
     @AppStorage("rightModulesListV2") private var rightModules: [String] = ["Calendar", "Media", "Weather"]
     @AppStorage("notchWidth") private var notchWidth: Double = 600.0
+    @AppStorage("barHeight") private var barHeight: Double = 110
+    @AppStorage("barCornerRadius") private var barCornerRadius: Double = 20
+    @AppStorage("barOpacity") private var barOpacity: Double = 100
+    @AppStorage("showClock") private var showClock: Bool = true
     
     // Dynamic width calculation
     private var dynamicWidth: CGFloat {
@@ -59,10 +63,12 @@ struct ContentView: View {
                         }
                         
                         // CENTER TIME
-                        Text(Date(), style: .time)
-                            .font(.system(size: 14, weight: .medium, design: .rounded))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 4)
+                        if showClock {
+                            Text(Date(), style: .time)
+                                .font(.system(size: 14, weight: .medium, design: .rounded))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 4)
+                        }
                         
                         // RIGHT MODULES (Or Drop Shelf if dragging)
                         if isTargeted || draggedItemName != nil {
@@ -119,15 +125,15 @@ struct ContentView: View {
                 }
             }
             .frame(width: hoverObserver.isHovering ? dynamicWidth : 160, 
-                   height: hoverObserver.isHovering ? 86 : 16)
+                   height: hoverObserver.isHovering ? CGFloat(barHeight) : 16)
             .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color.black)
+                RoundedRectangle(cornerRadius: CGFloat(barCornerRadius), style: .continuous)
+                    .fill(Color.black.opacity(barOpacity / 100))
                     // Push the shape upwards so top corners render off-screen, giving square top corners
                     .padding(.top, -20) 
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: CGFloat(barCornerRadius), style: .continuous)
                     .stroke(isTargeted ? Color.blue : Color.clear, lineWidth: 2)
                     .padding(.top, -20)
             )

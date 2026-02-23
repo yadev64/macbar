@@ -51,12 +51,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             print("Creating new Settings Window...")
             let hostingController = NSHostingController(rootView: SettingsView())
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 450, height: 350),
-                styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
+                contentRect: NSRect(x: 0, y: 0, width: 580, height: 500),
+                styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
                 backing: .buffered,
                 defer: false
             )
-            window.title = "Dashboard Settings"
+            window.title = "macbar Settings"
             window.contentViewController = hostingController
             window.isReleasedWhenClosed = false
             window.level = .floating // Ensure it appears above the current workspace
