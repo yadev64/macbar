@@ -1,11 +1,14 @@
 import Foundation
 import Combine
 import AppKit
+import EventKit
 
 class WidgetDataManager: ObservableObject {
     static let shared = WidgetDataManager()
     
     @Published var calendarData: String = "Fetching..."
+    @Published var calendarEvent: String = ""
+    @Published var calendarEventTime: String = ""
     @Published var weatherData: String = "Fetching..."
     @Published var cpuUsage: String = "0%"
     @Published var ramUsage: String = "0 MB"
@@ -23,6 +26,7 @@ class WidgetDataManager: ObservableObject {
     @Published var isSpotifyPlaying: Bool = false
     
     private var cancellables = Set<AnyCancellable>()
+    private let eventStore = EKEventStore()
     
     private init() {
         fetchAllData()
@@ -56,7 +60,7 @@ class WidgetDataManager: ObservableObject {
     }
     
     private func startTimers() {
-        Timer.publish(every: 60, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchCalendar() }.store(in: &cancellables)
+        Timer.publish(every: 30, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchCalendar() }.store(in: &cancellables)
         Timer.publish(every: 1800, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchWeather() }.store(in: &cancellables)
         // If weather shows N/A, retry every 30s until it succeeds
         Timer.publish(every: 30, on: .main, in: .common).autoconnect().sink { [weak self] _ in
@@ -80,6 +84,90 @@ class WidgetDataManager: ObservableObject {
             let formatter = DateFormatter()
             formatter.dateFormat = "EEE, MMM d"
             self.calendarData = formatter.string(from: Date())
+        }
+        
+        // Fetch upcoming event via EventKit
+        let status = EKEventStore.authorizationStatus(for: .event)
+        if status == .authorized || status == .fullAccess {
+            self.fetchNextEvent()
+        } else {
+            eventStore.requestFullAccessToEvents { granted, _ in
+                if granted {
+                    self.fetchNextEvent()
+                } else {
+                    DispatchQueue.main.async {
+                        self.calendarEvent = ""
+                        self.calendarEventTime = ""
+                    }
+                }
+            }
+        }
+    }
+    
+    private func fetchNextEvent() {
+        DispatchQueue.global(qos: .background).async {
+            let now = Date()
+            // Look back 2 hours (for in-progress events) and forward 24 hours
+            let startDate = now.addingTimeInterval(-2 * 3600)
+            let endDate = now.addingTimeInterval(24 * 3600)
+            
+            let calendars = self.eventStore.calendars(for: .event)
+            let predicate = self.eventStore.predicateForEvents(withStart: startDate, end: endDate, calendars: calendars)
+            let events = self.eventStore.events(matching: predicate)
+                .filter { !$0.isAllDay } // Skip all-day events
+                .sorted { $0.startDate < $1.startDate }
+            
+            // Find the most relevant event:
+            // 1. Currently in-progress event
+            // 2. Next upcoming event
+            var bestEvent: EKEvent? = nil
+            
+            for event in events {
+                if event.startDate <= now && event.endDate > now {
+                    // Currently in progress — this takes priority
+                    bestEvent = event
+                    break
+                }
+                if event.startDate > now {
+                    // Next upcoming
+                    bestEvent = event
+                    break
+                }
+            }
+            
+            DispatchQueue.main.async {
+                if let event = bestEvent {
+                    self.calendarEvent = event.title ?? "Event"
+                    self.calendarEventTime = self.relativeTime(for: event, now: now)
+                } else {
+                    self.calendarEvent = ""
+                    self.calendarEventTime = ""
+                }
+            }
+        }
+    }
+    
+    private func relativeTime(for event: EKEvent, now: Date) -> String {
+        let start = event.startDate!
+        let end = event.endDate!
+        
+        if start <= now && end > now {
+            // Event is in progress
+            let elapsed = Int(now.timeIntervalSince(start) / 60)
+            let remaining = Int(end.timeIntervalSince(now) / 60)
+            if elapsed < 1 { return "Starting now" }
+            if remaining < 1 { return "Ending now" }
+            if remaining <= 60 { return "\(remaining) min left" }
+            return "\(remaining / 60)h \(remaining % 60)m left"
+        } else {
+            // Event is upcoming
+            let minutesUntil = Int(start.timeIntervalSince(now) / 60)
+            if minutesUntil < 1 { return "Now" }
+            if minutesUntil < 60 { return "In \(minutesUntil) min" }
+            let hours = minutesUntil / 60
+            let mins = minutesUntil % 60
+            if mins == 0 { return "In \(hours)h" }
+            return "In \(hours)h \(mins)m"
         }
     }
 

@@ -61,6 +61,10 @@ cat > "$CONTENTS_DIR/Info.plist" <<EOF
     <true/>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
+    <key>NSCalendarsUsageDescription</key>
+    <string>macbar needs calendar access to show your upcoming events in the notch.</string>
+    <key>NSCalendarsFullAccessUsageDescription</key>
+    <string>macbar needs calendar access to show your upcoming events in the notch.</string>
 </dict>
 </plist>
 EOF

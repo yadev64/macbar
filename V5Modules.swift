@@ -41,30 +41,28 @@ struct CalendarModule: View {
             process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
             process.arguments = ["-a", "Calendar"]
             try? process.run()
-            
-            let script = """
-            tell application "Calendar"
-                activate
-                switch view to month view
-            end tell
-            """
-            if let appleScript = NSAppleScript(source: script) {
-                var error: NSDictionary?
-                appleScript.executeAndReturnError(&error)
-            }
         }) {
             HStack(spacing: 8) {
                 Image(systemName: "calendar")
                     .foregroundColor(.red)
                     .font(.system(size: 20))
-                VStack(alignment: .leading) {
-                    Text("Calendar")
-                        .font(.footnote)
-                        .foregroundColor(.gray)
+                VStack(alignment: .leading, spacing: 2) {
                     Text(data.calendarData)
-                        .font(.caption)
+                        .font(.system(size: 10, weight: .semibold))
                         .foregroundColor(.white)
-                        .lineLimit(1)
+                    if !data.calendarEvent.isEmpty {
+                        Text(data.calendarEvent)
+                            .font(.system(size: 9))
+                            .foregroundColor(.white.opacity(0.9))
+                            .lineLimit(1)
+                        Text(data.calendarEventTime)
+                            .font(.system(size: 8, weight: .medium))
+                            .foregroundColor(data.calendarEventTime.contains("left") ? .orange : .cyan)
+                    } else {
+                        Text("No upcoming events")
+                            .font(.system(size: 9))
+                            .foregroundColor(.gray)
+                    }
                 }
             }
             .frame(width: 140, alignment: .leading)
