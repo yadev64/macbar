@@ -48,10 +48,6 @@ When collapsed, macbar is invisible — it *is* your notch. Hover over it and it
 ### Build & Run
 
 ```bash
-# Clone the repo
-git clone https://github.com/your-username/macbar.git
-cd macbar
-
 # Build the app
 ./build.sh
 
