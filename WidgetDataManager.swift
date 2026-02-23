@@ -23,6 +23,18 @@ class WidgetDataManager: ObservableObject {
     private init() {
         fetchAllData()
         startTimers()
+        
+        // Re-fetch everything when waking from sleep (network may take a moment)
+        NotificationCenter.default.addObserver(
+            forName: NSWorkspace.didWakeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            // Delay 5s to let Wi-Fi reconnect
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                self?.fetchAllData()
+            }
+        }
     }
     
     func fetchAllData() {
@@ -41,6 +53,12 @@ class WidgetDataManager: ObservableObject {
     private func startTimers() {
         Timer.publish(every: 60, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchCalendar() }.store(in: &cancellables)
         Timer.publish(every: 1800, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchWeather() }.store(in: &cancellables)
+        // If weather shows N/A, retry every 30s until it succeeds
+        Timer.publish(every: 30, on: .main, in: .common).autoconnect().sink { [weak self] _ in
+            if self?.weatherData == "N/A" || self?.weatherData == "Fetching..." {
+                self?.fetchWeather()
+            }
+        }.store(in: &cancellables)
         Timer.publish(every: 3, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchCPU() }.store(in: &cancellables)
         Timer.publish(every: 3, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchRAM() }.store(in: &cancellables)
         Timer.publish(every: 60, on: .main, in: .common).autoconnect().sink { [weak self] _ in self?.fetchNote() }.store(in: &cancellables)
@@ -61,25 +79,74 @@ class WidgetDataManager: ObservableObject {
 
     private func fetchWeather() {
         DispatchQueue.global(qos: .background).async {
-            let task = Process()
-            let pipe = Pipe()
-            task.executableURL = URL(fileURLWithPath: "/usr/bin/curl")
-            task.arguments = ["-s", "https://wttr.in/?format=\"%t+%C\""]
-            task.standardOutput = pipe
-            try? task.run()
-            task.waitUntilExit()
+            // Step 1: Get location from ipinfo.io
+            let locTask = Process()
+            let locPipe = Pipe()
+            locTask.executableURL = URL(fileURLWithPath: "/usr/bin/curl")
+            locTask.arguments = ["-sf", "--max-time", "8", "https://ipinfo.io/loc"]
+            locTask.standardOutput = locPipe
+            try? locTask.run()
+            locTask.waitUntilExit()
             
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            if let output = String(data: data, encoding: .utf8), !output.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                let cleaned = output.trimmingCharacters(in: CharacterSet(charactersIn: "\"\n\r "))
+            let locData = locPipe.fileHandleForReading.readDataToEndOfFile()
+            guard let locStr = String(data: locData, encoding: .utf8)?
+                    .trimmingCharacters(in: .whitespacesAndNewlines),
+                  !locStr.isEmpty else {
+                // Network not ready yet — don't overwrite with N/A, just leave current value
+                return
+            }
+            
+            let coords = locStr.components(separatedBy: ",")
+            guard coords.count == 2 else { return }
+            let lat = coords[0]
+            let lon = coords[1]
+            
+            // Step 2: Fetch weather from Open-Meteo (free, no API key)
+            let url = "https://api.open-meteo.com/v1/forecast?latitude=\(lat)&longitude=\(lon)&current=temperature_2m,weather_code&timezone=auto"
+            let wxTask = Process()
+            let wxPipe = Pipe()
+            wxTask.executableURL = URL(fileURLWithPath: "/usr/bin/curl")
+            wxTask.arguments = ["-sf", "--max-time", "8", url]
+            wxTask.standardOutput = wxPipe
+            try? wxTask.run()
+            wxTask.waitUntilExit()
+            
+            let wxData = wxPipe.fileHandleForReading.readDataToEndOfFile()
+            guard let wxStr = String(data: wxData, encoding: .utf8),
+                  !wxStr.isEmpty else { return }
+            
+            // Minimal JSON parsing without Foundation.JSONSerialization overhead
+            if let json = try? JSONSerialization.jsonObject(with: Data(wxStr.utf8)) as? [String: Any],
+               let current = json["current"] as? [String: Any],
+               let temp = current["temperature_2m"] as? Double,
+               let code = current["weather_code"] as? Int {
+                let condition = Self.weatherDescription(for: code)
+                let display = String(format: "%.0f°C %@", temp, condition)
                 DispatchQueue.main.async {
-                    self.weatherData = cleaned
-                }
-            } else {
-                DispatchQueue.main.async {
-                    self.weatherData = "N/A"
+                    self.weatherData = display
                 }
             }
+        }
+    }
+    
+    private static func weatherDescription(for code: Int) -> String {
+        switch code {
+        case 0: return "Clear"
+        case 1: return "Mostly Clear"
+        case 2: return "Partly Cloudy"
+        case 3: return "Overcast"
+        case 45, 48: return "Foggy"
+        case 51, 53, 55: return "Drizzle"
+        case 56, 57: return "Freezing Drizzle"
+        case 61, 63, 65: return "Rainy"
+        case 66, 67: return "Freezing Rain"
+        case 71, 73, 75: return "Snowy"
+        case 77: return "Snow Grains"
+        case 80, 81, 82: return "Showers"
+        case 85, 86: return "Snow Showers"
+        case 95: return "Thunderstorm"
+        case 96, 99: return "Hail Storm"
+        default: return "—"
         }
     }
 
