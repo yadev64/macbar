@@ -422,6 +422,7 @@ struct AppearanceTab: View {
     @AppStorage("barCornerRadius") private var barCornerRadius: Double = 20
     @AppStorage("barOpacity") private var barOpacity: Double = 95
     @AppStorage("showStatsBar") private var showStatsBar: Bool = false
+    @AppStorage("aestheticTheme") private var aestheticTheme: String = "Black"
     
     var body: some View {
         Form {
@@ -432,6 +433,16 @@ struct AppearanceTab: View {
                     .foregroundColor(.secondary)
             } header: {
                 Label("Stats Bar", systemImage: "chart.bar")
+            }
+            
+            Section {
+                Picker("Theme", selection: $aestheticTheme) {
+                    Text("Black").tag("Black")
+                    Text("Liquid Glass").tag("Liquid Glass")
+                }
+                .pickerStyle(SegmentedPickerStyle())
+            } header: {
+                Label("Aesthetic Mode Theme", systemImage: "macwindow.badge.plus")
             }
             
             Section {

@@ -10,6 +10,7 @@ struct ContentView: View {
     @AppStorage("rightModulesListV2") private var rightModules: [String] = ["Weather", "Calendar"]
     @AppStorage("aestheticWidgets") private var aestheticWidgets: [String] = ["Media", "Calendar", "System"]
     @AppStorage("aestheticMode") private var aestheticMode: Bool = false
+    @AppStorage("aestheticTheme") private var aestheticTheme: String = "Black"
     @AppStorage("notchWidth") private var notchWidth: Double = 600.0
     @AppStorage("barHeight") private var barHeight: Double = 120
     @AppStorage("barCornerRadius") private var barCornerRadius: Double = 20
@@ -248,10 +249,18 @@ struct ContentView: View {
             .frame(width: hoverObserver.isHovering ? dynamicWidth : 160, 
                    height: hoverObserver.isHovering ? expandedHeight : 16)
             .background(
-                RoundedRectangle(cornerRadius: CGFloat(barCornerRadius), style: .continuous)
-                    .fill(Color.black.opacity(barOpacity / 100))
-                    .padding(.top, -40) 
+                Group {
+                    if aestheticTheme == "Liquid Glass" {
+                        VisualEffectView(material: .hudWindow, blendingMode: .behindWindow)
+                            .clipShape(RoundedRectangle(cornerRadius: CGFloat(barCornerRadius), style: .continuous))
+                    } else {
+                        RoundedRectangle(cornerRadius: CGFloat(barCornerRadius), style: .continuous)
+                            .fill(Color.black.opacity(barOpacity / 100))
+                    }
+                }
+                .padding(.top, -40) 
             )
+            .shadow(color: hoverObserver.isHovering ? Color.black.opacity(0.3) : Color.clear, radius: 30, x: 0, y: 15)
             .overlay(
                 RoundedRectangle(cornerRadius: CGFloat(barCornerRadius), style: .continuous)
                     .stroke(isTargeted ? Color.blue : Color.clear, lineWidth: 2)
@@ -339,5 +348,24 @@ struct ContentView: View {
     
     private func openSettings() {
         AppDelegate.shared.openSettings()
+    }
+}
+
+// MARK: - Visual Effect View
+struct VisualEffectView: NSViewRepresentable {
+    var material: NSVisualEffectView.Material
+    var blendingMode: NSVisualEffectView.BlendingMode
+    
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = material
+        view.blendingMode = blendingMode
+        view.state = .active
+        return view
+    }
+    
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+        nsView.material = material
+        nsView.blendingMode = blendingMode
     }
 }
