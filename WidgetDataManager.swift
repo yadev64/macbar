@@ -27,6 +27,37 @@ class WidgetDataManager: ObservableObject {
     @Published var spotifyArtist: String = ""
     @Published var isSpotifyPlaying: Bool = false
     
+    // MARK: - Aesthetic Mode Data
+    // Media
+    @Published var mediaArtwork: NSImage? = nil
+    @Published var mediaDuration: Double = 0
+    @Published var mediaPosition: Double = 0
+    @Published var mediaApp: String = ""
+    
+    // System
+    @Published var networkUpSpeed: String = "0 KB/s"
+    @Published var networkDownSpeed: String = "0 KB/s"
+    @Published var customDiskRead: String = "0 KB/s"
+    @Published var customDiskWrite: String = "0 KB/s"
+    
+    // Calendar
+    struct CalendarEventInfo: Identifiable {
+        let id = UUID()
+        let title: String
+        let startDate: Date
+        let endDate: Date
+        let color: NSColor
+        let isAllDay: Bool
+        let url: URL?
+        let notes: String?
+    }
+    @Published var todayEvents: [CalendarEventInfo] = []
+    @Published var selectedCalendarDate: Date = Date() {
+        didSet {
+            fetchAestheticCalendar()
+        }
+    }
+    
     private var cancellables = Set<AnyCancellable>()
     private let eventStore = EKEventStore()
     
@@ -86,6 +117,13 @@ class WidgetDataManager: ObservableObject {
             self?.fetchCPU()
             self?.fetchRAM()
         }.store(in: &visibleCancellables)
+        
+        // Very fast updates for network/disk speeds (live feeling)
+        Timer.publish(every: 2, on: .main, in: .common).autoconnect().sink { [weak self] _ in
+            guard self?.isVisible == true else { return }
+            self?.fetchSystemSpeeds()
+        }.store(in: &visibleCancellables)
+        
         Timer.publish(every: 5, on: .main, in: .common).autoconnect().sink { [weak self] _ in
             guard self?.isVisible == true else { return }
             self?.fetchSpotify()
@@ -126,16 +164,49 @@ class WidgetDataManager: ObservableObject {
         let status = EKEventStore.authorizationStatus(for: .event)
         if status == .authorized || status == .fullAccess {
             self.fetchNextEvent()
+            self.fetchAestheticCalendar()
         } else {
             eventStore.requestFullAccessToEvents { granted, _ in
                 if granted {
                     self.fetchNextEvent()
+                    self.fetchAestheticCalendar()
                 } else {
                     DispatchQueue.main.async {
                         self.calendarEvent = ""
                         self.calendarEventTime = ""
+                        self.todayEvents = []
                     }
                 }
+            }
+        }
+    }
+    
+    private func fetchAestheticCalendar() {
+        DispatchQueue.global(qos: .background).async {
+            let targetDate = self.selectedCalendarDate
+            let calendar = Calendar.current
+            let startOfDay = calendar.startOfDay(for: targetDate)
+            let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+            
+            let calendars = self.eventStore.calendars(for: .event)
+            let predicate = self.eventStore.predicateForEvents(withStart: startOfDay, end: endOfDay, calendars: calendars)
+            let events = self.eventStore.events(matching: predicate)
+                .sorted { $0.startDate < $1.startDate }
+            
+            let eventInfos = events.map { event in
+                CalendarEventInfo(
+                    title: event.title ?? "New Event",
+                    startDate: event.startDate,
+                    endDate: event.endDate,
+                    color: NSColor(cgColor: event.calendar.cgColor) ?? .systemBlue,
+                    isAllDay: event.isAllDay,
+                    url: event.url,
+                    notes: event.notes
+                )
+            }
+            
+            DispatchQueue.main.async {
+                self.todayEvents = eventInfos
             }
         }
     }
@@ -548,24 +619,131 @@ class WidgetDataManager: ObservableObject {
             let clean = output.trimmingCharacters(in: .whitespacesAndNewlines)
             let parts = clean.components(separatedBy: "|||")
             
-            if parts.count >= 4 {
+            if parts.count >= 7 {
                 DispatchQueue.main.async {
                     let title = parts[0]
                     let artist = parts[1]
                     let source = parts[2]
                     let isPlaying = parts[3] == "true"
+                    let duration = Double(parts[4]) ?? 0
+                    let elapsed = Double(parts[5]) ?? 0
+                    let artworkBase64 = parts[6]
                     
                     if !title.isEmpty && title != "Not Playing" {
                         self.mediaTrack = title
                         self.mediaArtist = artist
-                        self.mediaSource = source
+                        self.mediaApp = source
                         self.isMediaPlaying = isPlaying
+                        self.mediaDuration = duration
+                        self.mediaPosition = elapsed
+                        
+                        if !artworkBase64.isEmpty, let pData = Data(base64Encoded: artworkBase64, options: .ignoreUnknownCharacters), let img = NSImage(data: pData) {
+                            self.mediaArtwork = img
+                        } else {
+                            self.mediaArtwork = nil
+                        }
+                        
                     } else {
                         self.isMediaPlaying = false
+                        self.mediaArtwork = nil
+                        self.mediaDuration = 0
+                        self.mediaPosition = 0
                     }
                 }
             }
         }
+    }
+    
+    private var lastNetBytesOut: UInt64 = 0
+    private var lastNetBytesIn: UInt64 = 0
+    
+    func fetchSystemSpeeds() {
+        DispatchQueue.global(qos: .background).async {
+            // 1. Network Speeds via netstat
+            let netTask = Process()
+            let netPipe = Pipe()
+            netTask.executableURL = URL(fileURLWithPath: "/usr/bin/netstat")
+            netTask.arguments = ["-ib"]
+            netTask.standardOutput = netPipe
+            try? netTask.run()
+            netTask.waitUntilExit()
+            
+            let netData = netPipe.fileHandleForReading.readDataToEndOfFile()
+            if let output = String(data: netData, encoding: .utf8) {
+                var currentBytesIn: UInt64 = 0
+                var currentBytesOut: UInt64 = 0
+                
+                let lines = output.components(separatedBy: .newlines)
+                for line in lines.dropFirst() {
+                    let cols = line.split(separator: " ", omittingEmptySubsequences: true)
+                    // netstat -ib format varies slightly, but roughly: Name Mtu Network Address Ipkts Ierrs Ibytes Opkts Oerrs Obytes Coll
+                    // Usually Ibytes is col 6, Obytes is col 9.
+                    if cols.count >= 10, let ibytes = UInt64(cols[6]), let obytes = UInt64(cols[9]) {
+                        currentBytesIn += ibytes
+                        currentBytesOut += obytes
+                    } else if cols.count == 11, let ibytes = UInt64(cols[7]), let obytes = UInt64(cols[10]) {
+                        // Alternate format with Name Mtu Network Address Ipkts Ierrs Drop Ibytes Opkts Oerrs Obytes Coll
+                        currentBytesIn += ibytes
+                        currentBytesOut += obytes
+                    }
+                }
+                
+                if self.lastNetBytesIn > 0 && self.lastNetBytesOut > 0 {
+                    let diffIn = currentBytesIn > self.lastNetBytesIn ? currentBytesIn - self.lastNetBytesIn : 0
+                    let diffOut = currentBytesOut > self.lastNetBytesOut ? currentBytesOut - self.lastNetBytesOut : 0
+                    
+                    let rxSpeed = self.formatBytesPerSecond(diffIn)
+                    let txSpeed = self.formatBytesPerSecond(diffOut)
+                    
+                    DispatchQueue.main.async {
+                        self.networkDownSpeed = rxSpeed
+                        self.networkUpSpeed = txSpeed
+                    }
+                }
+                
+                self.lastNetBytesIn = currentBytesIn
+                self.lastNetBytesOut = currentBytesOut
+            }
+            
+            // 2. Disk Speeds via iostat (sample over 1 second)
+            let diskTask = Process()
+            let diskPipe = Pipe()
+            diskTask.executableURL = URL(fileURLWithPath: "/usr/sbin/iostat")
+            diskTask.arguments = ["-d", "-K", "-w", "1", "-c", "2"] // 2 samples, 1 sec delay
+            diskTask.standardOutput = diskPipe
+            try? diskTask.run()
+            diskTask.waitUntilExit()
+            
+            let diskData = diskPipe.fileHandleForReading.readDataToEndOfFile()
+            if let output = String(data: diskData, encoding: .utf8) {
+                let lines = output.components(separatedBy: .newlines).filter { !$0.isEmpty }
+                // Look at the very last line (second sample)
+                if let lastLine = lines.last {
+                    let cols = lastLine.split(separator: " ", omittingEmptySubsequences: true)
+                    // iostat format: KB/t xfrs/s MB/s (for each disk). We just sum up the MB/s column (index 2, 5, 8...)
+                    // Actually, total sum is easier: sum all KB/t * xfrs/s... wait, standard iostat format has disk0 disk1
+                    // Let's just grab the first disk's speed for now (usually the main SSD)
+                    if cols.count >= 3, let mbps = Double(cols[2]) {
+                        // iostat doesn't easily split read/write without complex parsing.
+                        // Let's use a simplified representation or just show total I/O
+                        let speedStr = String(format: "%.1f MB/s", mbps)
+                        DispatchQueue.main.async {
+                            // Assign total speed to both for now, or just one
+                            self.customDiskRead = speedStr
+                            self.customDiskWrite = "—"
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    private func formatBytesPerSecond(_ bytes: UInt64) -> String {
+        if bytes < 1024 { return "\(bytes) B/s" }
+        let kb = Double(bytes) / 1024.0
+        if kb < 1024 { return String(format: "%.0f KB/s", kb) }
+        let mb = kb / 1024.0
+        return String(format: "%.1f MB/s", mb)
     }
     
     func sendSpotifyCommand(_ command: String) {

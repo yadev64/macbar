@@ -8,6 +8,8 @@ struct ContentView: View {
     
     @AppStorage("leftModulesListV2") private var leftModules: [String] = ["Screen Time", "Media", "Notes"]
     @AppStorage("rightModulesListV2") private var rightModules: [String] = ["Weather", "Calendar"]
+    @AppStorage("aestheticWidgets") private var aestheticWidgets: [String] = ["Media", "Calendar", "System"]
+    @AppStorage("aestheticMode") private var aestheticMode: Bool = false
     @AppStorage("notchWidth") private var notchWidth: Double = 600.0
     @AppStorage("barHeight") private var barHeight: Double = 120
     @AppStorage("barCornerRadius") private var barCornerRadius: Double = 20
@@ -20,39 +22,65 @@ struct ContentView: View {
         let hStackPadding: CGFloat = 50 // .padding(.horizontal, 25)
         let timeWidth: CGFloat = showClock ? 85 : 0
         let hStackSpacing: CGFloat = 16 // Gap
-        
-        let allModules = leftModules + rightModules
-        var totalModuleWidths: CGFloat = 0
-        
-        for mod in allModules {
-            switch mod {
-            case "Clock": totalModuleWidths += 130
-            case "Media": totalModuleWidths += 172
-            case "Spotify": totalModuleWidths += 172
-            case "Battery": totalModuleWidths += 95
-            case "AirDrop": totalModuleWidths += 110
-            case "Calendar": totalModuleWidths += 152
-            case "Weather": totalModuleWidths += 162
-            case "CPU": totalModuleWidths += 112
-            case "RAM": totalModuleWidths += 112
-            case "Notes": totalModuleWidths += 152
-            case "Reminders": totalModuleWidths += 152
-            case "AirPods": totalModuleWidths += 132
-            case "Screen Time": totalModuleWidths += 120
-            case "Storage": totalModuleWidths += 152
-            case "Network": totalModuleWidths += 142
-            default: totalModuleWidths += 120 // Fallback
-            }
-        }
-        
-        // Gap for time is 2 gaps if time is there. Total elements = count + 1. So gaps = count.
-        let calculated = hStackPadding + timeWidth + totalModuleWidths + (CGFloat(allModules.count) * hStackSpacing)
         let minStatsWidth: CGFloat = showStatsBar ? 500 : 160
-        return allModules.isEmpty ? minStatsWidth : max(calculated, minStatsWidth)
+        
+        if aestheticMode {
+            // Aesthetic mode width: sum of chosen aesthetic widgets with new spacious ratios
+            var totalAestheticWidth: CGFloat = 0
+            for widget in aestheticWidgets {
+                switch widget {
+                case "Media": totalAestheticWidth += max(CGFloat(barHeight * 2.5), 280)
+                case "Calendar": totalAestheticWidth += max(CGFloat(barHeight * 4.0), 380)
+                case "System": totalAestheticWidth += max(CGFloat(barHeight * 1.6), 160)
+                default: break
+                }
+            }
+            
+            // Add padding (sides + icon toggle) and spacing
+            let padding: CGFloat = 40 // 20 on each side
+            let spacing = CGFloat(max(0, aestheticWidgets.count - 1)) * 16
+            let calculated = totalAestheticWidth + padding + spacing
+            
+            return aestheticWidgets.isEmpty ? minStatsWidth : max(calculated, minStatsWidth)
+            
+        } else {
+            // Utility mode width (legacy)
+            let allModules = leftModules + rightModules
+            var totalModuleWidths: CGFloat = 0
+            
+            for mod in allModules {
+                switch mod {
+                case "Clock": totalModuleWidths += 130
+                case "Media": totalModuleWidths += 172
+                case "Spotify": totalModuleWidths += 172
+                case "Battery": totalModuleWidths += 95
+                case "AirDrop": totalModuleWidths += 110
+                case "Calendar": totalModuleWidths += 152
+                case "Weather": totalModuleWidths += 162
+                case "CPU": totalModuleWidths += 112
+                case "RAM": totalModuleWidths += 112
+                case "Notes": totalModuleWidths += 152
+                case "Reminders": totalModuleWidths += 152
+                case "AirPods": totalModuleWidths += 132
+                case "Screen Time": totalModuleWidths += 120
+                case "Storage": totalModuleWidths += 152
+                case "Network": totalModuleWidths += 142
+                default: totalModuleWidths += 120 // Fallback
+                }
+            }
+            
+            // Gap for time is 2 gaps if time is there. Total elements = count + 1. So gaps = count.
+            let calculated = hStackPadding + timeWidth + totalModuleWidths + (CGFloat(allModules.count) * hStackSpacing)
+            return allModules.isEmpty ? minStatsWidth : max(calculated, minStatsWidth)
+        }
     }
     
     private var expandedHeight: CGFloat {
-        showStatsBar ? CGFloat(barHeight) + 22 : CGFloat(barHeight)
+        if aestheticMode {
+            return CGFloat(barHeight) + 42 // 28pt control bar + 6pt top padding + 8pt widget vertical padding
+        } else {
+            return showStatsBar ? CGFloat(barHeight) + 22 : CGFloat(barHeight)
+        }
     }
     
     var body: some View {
@@ -61,8 +89,38 @@ struct ContentView: View {
                 // Content
                 if hoverObserver.isHovering {
                     VStack(spacing: 0) {
-                        // STATS BAR (compact top row)
-                        if showStatsBar {
+                        // TOP ROW (Controls or Stats)
+                        if aestheticMode {
+                            // Dedicated Top Control Bar for Aesthetic Mode
+                            HStack {
+                                Button(action: {
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                                        aestheticMode.toggle()
+                                    }
+                                }) {
+                                    Image(systemName: "sparkles")
+                                        .foregroundColor(Color.accentColor) // Highlighted state
+                                        .font(.system(size: 14))
+                                        .padding(8)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .padding(.leading, 16)
+                                
+                                Spacer()
+                                
+                                Button(action: { openSettings() }) {
+                                    Image(systemName: "gearshape.fill")
+                                        .foregroundColor(.gray.opacity(0.8))
+                                        .font(.system(size: 13))
+                                        .padding(8)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .padding(.trailing, 16)
+                            }
+                            .frame(height: 28) // Same height logic as StatsBar
+                            .padding(.top, 6)
+                            
+                        } else if showStatsBar {
                             StatsBarView()
                                 .padding(.top, 6)
                             
@@ -74,71 +132,108 @@ struct ContentView: View {
                         }
                         
                         // MAIN WIDGET ROW
-                        HStack(spacing: 16) {
-                            // LEFT MODULES
-                            ForEach(leftModules, id: \.self) { mod in
-                                buildModule(name: mod)
-                                    .id(mod)
-                            }
-                            
-                            // CENTER TIME (only if stats bar is off — otherwise time is in the stats bar)
-                            if showClock && !showStatsBar {
-                                Text(Date(), style: .time)
-                                    .font(.system(size: 14, weight: .medium, design: .rounded))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 4)
-                            }
-                            
-                            // RIGHT MODULES (Or Drop Shelf if dragging)
-                            if isTargeted || draggedItemName != nil {
-                                HStack {
-                                    if let iName = draggedItemName {
-                                        Image(systemName: "doc.fill")
-                                            .foregroundColor(.blue)
-                                        Text(iName)
-                                            .font(.caption)
-                                            .foregroundColor(.white)
-                                            .lineLimit(1)
-                                            .frame(maxWidth: 80)
-                                    } else {
-                                        Image(systemName: "tray.and.arrow.down")
-                                            .foregroundColor(isTargeted ? .blue : .gray)
-                                        Text("Drop Files Here")
-                                            .font(.caption)
-                                            .foregroundColor(.gray)
-                                    }
+                        if aestheticMode {
+                            // AESTHETIC LAYOUT
+                            HStack(spacing: 16) {
+                                ForEach(aestheticWidgets, id: \.self) { mod in
+                                    buildAestheticModule(name: mod)
                                 }
-                                .padding(8)
-                                .background(Color.white.opacity(0.1))
-                                .cornerRadius(8)
-                            } else {
-                                ForEach(rightModules.reversed(), id: \.self) { mod in
+                            }
+                            .padding(.horizontal, 20) // Snug to edges
+                            .padding(.vertical, 4) // 4px padding around widgets
+                        } else {
+                            // UTILITY LAYOUT
+                            HStack(spacing: 16) {
+                                // LEFT MODULES
+                                ForEach(leftModules, id: \.self) { mod in
                                     buildModule(name: mod)
                                         .id(mod)
                                 }
+                                
+                                // CENTER TIME (only if stats bar is off — otherwise time is in the stats bar)
+                                if showClock && !showStatsBar {
+                                    Text(Date(), style: .time)
+                                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 4)
+                                }
+                                
+                                // RIGHT MODULES (Or Drop Shelf if dragging)
+                                if isTargeted || draggedItemName != nil {
+                                    HStack {
+                                        if let iName = draggedItemName {
+                                            Image(systemName: "doc.fill")
+                                                .foregroundColor(.blue)
+                                            Text(iName)
+                                                .font(.caption)
+                                                .foregroundColor(.white)
+                                                .lineLimit(1)
+                                                .frame(maxWidth: 80)
+                                        } else {
+                                            Image(systemName: "tray.and.arrow.down")
+                                                .foregroundColor(isTargeted ? .blue : .gray)
+                                            Text("Drop Files Here")
+                                                .font(.caption)
+                                                .foregroundColor(.gray)
+                                        }
+                                    }
+                                    .padding(8)
+                                    .background(Color.white.opacity(0.1))
+                                    .cornerRadius(8)
+                                } else {
+                                    ForEach(rightModules.reversed(), id: \.self) { mod in
+                                        buildModule(name: mod)
+                                            .id(mod)
+                                    }
+                                }
                             }
+                            .padding(.horizontal, 25)
                         }
-                        .padding(.horizontal, 25)
                     }
                     .transition(.opacity.combined(with: .scale))
                     
-                    // TOP RIGHT SETTINGS BUTTON
-                    VStack {
-                        HStack {
-                            Spacer()
-                            Button(action: { openSettings() }) {
-                                Image(systemName: "gearshape.fill")
-                                    .foregroundColor(.gray.opacity(0.5))
-                                    .font(.system(size: 12))
-                                    .padding(8)
+                    // TOP LEFT AND RIGHT BUTTONS (Utility Mode Overlays)
+                    if !aestheticMode {
+                        // TOP LEFT TAB TOGGLE BUTTON
+                        VStack {
+                            HStack {
+                                Button(action: {
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                                        aestheticMode.toggle()
+                                    }
+                                }) {
+                                    Image(systemName: "rectangle.grid.3x2.fill")
+                                        .foregroundColor(.gray.opacity(0.5))
+                                        .font(.system(size: 14))
+                                        .padding(8)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .padding(.top, 4)
+                                .padding(.leading, 12)
+                                Spacer()
                             }
-                            .buttonStyle(PlainButtonStyle())
-                            .padding(.top, 4)
-                            .padding(.trailing, 8)
+                            Spacer()
                         }
-                        Spacer()
+                        .transition(.opacity)
+                        
+                        // TOP RIGHT SETTINGS BUTTON
+                        VStack {
+                            HStack {
+                                Spacer()
+                                Button(action: { openSettings() }) {
+                                    Image(systemName: "gearshape.fill")
+                                        .foregroundColor(.gray.opacity(0.5))
+                                        .font(.system(size: 12))
+                                        .padding(8)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .padding(.top, 4)
+                                .padding(.trailing, 8)
+                            }
+                            Spacer()
+                        }
+                        .transition(.opacity)
                     }
-                    .transition(.opacity)
                 } else {
                     // Emulate physical notch base width
                     Color.clear
@@ -217,6 +312,20 @@ struct ContentView: View {
             StorageModule()
         case "Network":
             NetworkModule()
+        default:
+            EmptyView()
+        }
+    }
+    
+    @ViewBuilder
+    func buildAestheticModule(name: String) -> some View {
+        switch name {
+        case "Media":
+            AestheticMediaWidget()
+        case "Calendar":
+            AestheticCalendarWidget()
+        case "System":
+            AestheticSystemWidget()
         default:
             EmptyView()
         }

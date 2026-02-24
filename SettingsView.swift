@@ -60,7 +60,10 @@ struct SettingsView: View {
                     Label("General", systemImage: "gearshape")
                 }
                 NavigationLink(destination: WidgetsTab(), tag: "Widgets", selection: $selection) {
-                    Label("Widgets", systemImage: "square.grid.2x2")
+                    Label("Utility Widgets", systemImage: "square.grid.2x2")
+                }
+                NavigationLink(destination: AestheticTab(), tag: "Aesthetic", selection: $selection) {
+                    Label("Aesthetic Mode", systemImage: "sparkles")
                 }
                 NavigationLink(destination: NotchTab(), tag: "Notch", selection: $selection) {
                     Label("Notch", systemImage: "rectangle.topthird.inset.filled")
@@ -297,6 +300,60 @@ struct WidgetPoolItem: View {
         }
         .buttonStyle(PlainButtonStyle())
         .onHover { h in isHovering = h }
+    }
+}
+
+// MARK: - Aesthetic Tab
+struct AestheticTab: View {
+    @AppStorage("aestheticMode") private var aestheticMode: Bool = false
+    @AppStorage("aestheticWidgets") private var aestheticWidgets: [String] = ["Media", "Calendar", "System"]
+    
+    let availableAestheticWidgets = ["Media", "Calendar", "System"]
+    
+    var body: some View {
+        Form {
+            Section {
+                Toggle("Enable Aesthetic Mode", isOn: $aestheticMode)
+                Text("Replaces utility widgets with a set of 3 premium, full-height widgets designed for beauty and function.")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            } header: {
+                Label("Mode Toggle", systemImage: "sparkles")
+            }
+            
+            Section {
+                Text("Select up to 3 widgets to display in Aesthetic Mode. They will be sized to perfectly fill your notch.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.bottom, 4)
+                
+                ForEach(availableAestheticWidgets, id: \.self) { widget in
+                    Toggle(widget, isOn: Binding(
+                        get: { aestheticWidgets.contains(widget) },
+                        set: { isSelected in
+                            if isSelected {
+                                if aestheticWidgets.count < 3 {
+                                    aestheticWidgets.append(widget)
+                                }
+                            } else {
+                                aestheticWidgets.removeAll { $0 == widget }
+                            }
+                        }
+                    ))
+                    .disabled(!aestheticWidgets.contains(widget) && aestheticWidgets.count >= 3)
+                }
+                
+                if aestheticWidgets.count == 3 {
+                    Text("Maximum of 3 widgets selected.")
+                        .font(.caption2)
+                        .foregroundColor(.orange)
+                }
+            } header: {
+                Label("Active Widgets", systemImage: "checklist")
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
     }
 }
 
