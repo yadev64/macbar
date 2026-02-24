@@ -7,6 +7,7 @@ struct AestheticMediaWidget: View {
     @State private var hoverState = false
     
     @AppStorage("barHeight") private var barHeight: Double = 120
+    @AppStorage("aestheticTheme") private var aestheticTheme: String = "Black"
     
     var body: some View {
         let width = max(CGFloat(barHeight * 2.8), 300)
@@ -110,6 +111,7 @@ struct AestheticMediaWidget: View {
         .frame(width: width, height: height)
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Color.white.opacity(0.15), lineWidth: 0.5))
+        .shadow(color: aestheticTheme == "Liquid Glass" ? Color.black.opacity(0.25) : .clear, radius: 12, x: 0, y: 6)
     }
     
     private func controlButton(icon: String, size: CGFloat = 18, action: @escaping () -> Void) -> some View {
@@ -136,6 +138,7 @@ struct AestheticMediaWidget: View {
 struct AestheticCalendarWidget: View {
     @ObservedObject var data = WidgetDataManager.shared
     @AppStorage("barHeight") private var barHeight: Double = 120
+    @AppStorage("aestheticTheme") private var aestheticTheme: String = "Black"
     
     var body: some View {
         let width = max(CGFloat(barHeight * 4.0), 380)
@@ -232,6 +235,7 @@ struct AestheticCalendarWidget: View {
         .background(Color.white.opacity(0.02))
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Color.white.opacity(0.15), lineWidth: 0.5))
+        .shadow(color: aestheticTheme == "Liquid Glass" ? Color.black.opacity(0.25) : .clear, radius: 12, x: 0, y: 6)
     }
     
     @ViewBuilder
@@ -375,6 +379,7 @@ struct EventCard: View {
 struct AestheticSystemWidget: View {
     @ObservedObject var data = WidgetDataManager.shared
     @AppStorage("barHeight") private var barHeight: Double = 120
+    @AppStorage("aestheticTheme") private var aestheticTheme: String = "Black"
     
     var body: some View {
         let width = max(CGFloat(barHeight * 1.6), 160)
@@ -408,6 +413,7 @@ struct AestheticSystemWidget: View {
         .background(Color.white.opacity(0.1)) // Acts as the 1pt divider color
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Color.white.opacity(0.15), lineWidth: 0.5))
+        .shadow(color: aestheticTheme == "Liquid Glass" ? Color.black.opacity(0.25) : .clear, radius: 12, x: 0, y: 6)
     }
 }
 

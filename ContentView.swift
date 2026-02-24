@@ -272,7 +272,7 @@ struct ContentView: View {
             Spacer(minLength: 0)
         }
         // Frame the entire VStack (safe area + dynamic content) using a wider 2800pt canvas
-        .frame(width: 2800, height: 180, alignment: .top)
+        .frame(width: 2800, height: 280, alignment: .top)
         // Ensure SwiftUI view respects safe area / borderless
         .edgesIgnoringSafeArea(.all)
         .onDrop(of: [UTType.fileURL], isTargeted: $isTargeted) { providers in
