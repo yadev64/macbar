@@ -612,9 +612,8 @@ class WidgetDataManager: ObservableObject {
             task.standardError = FileHandle.nullDevice
             
             guard (try? task.run()) != nil else { return }
-            task.waitUntilExit()
-            
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            task.waitUntilExit()
             guard let output = String(data: data, encoding: .utf8) else { return }
             let clean = output.trimmingCharacters(in: .whitespacesAndNewlines)
             let parts = clean.components(separatedBy: "|||")
@@ -666,9 +665,8 @@ class WidgetDataManager: ObservableObject {
             netTask.arguments = ["-ib"]
             netTask.standardOutput = netPipe
             try? netTask.run()
-            netTask.waitUntilExit()
-            
             let netData = netPipe.fileHandleForReading.readDataToEndOfFile()
+            netTask.waitUntilExit()
             if let output = String(data: netData, encoding: .utf8) {
                 var currentBytesIn: UInt64 = 0
                 var currentBytesOut: UInt64 = 0
@@ -712,9 +710,8 @@ class WidgetDataManager: ObservableObject {
             diskTask.arguments = ["-d", "-K", "-w", "1", "-c", "2"] // 2 samples, 1 sec delay
             diskTask.standardOutput = diskPipe
             try? diskTask.run()
-            diskTask.waitUntilExit()
-            
             let diskData = diskPipe.fileHandleForReading.readDataToEndOfFile()
+            diskTask.waitUntilExit()
             if let output = String(data: diskData, encoding: .utf8) {
                 let lines = output.components(separatedBy: .newlines).filter { !$0.isEmpty }
                 // Look at the very last line (second sample)

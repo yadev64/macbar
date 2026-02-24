@@ -443,7 +443,7 @@ struct AppearanceTab: View {
                             .foregroundColor(.secondary)
                             .monospacedDigit()
                     }
-                    Slider(value: $barHeight, in: 50...150, step: 5)
+                    Slider(value: $barHeight, in: 95...150, step: 5)
                 }
                 
                 VStack(alignment: .leading) {

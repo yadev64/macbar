@@ -9,7 +9,7 @@ struct AestheticMediaWidget: View {
     @AppStorage("barHeight") private var barHeight: Double = 120
     
     var body: some View {
-        let width = max(CGFloat(barHeight * 2.5), 280)
+        let width = max(CGFloat(barHeight * 2.8), 300)
         let height = CGFloat(barHeight)
         
         ZStack {
@@ -25,7 +25,7 @@ struct AestheticMediaWidget: View {
                 LinearGradient(gradient: Gradient(colors: [Color.purple.opacity(0.4), Color.indigo.opacity(0.4)]), startPoint: .topLeading, endPoint: .bottomTrailing)
             }
             
-            HStack(spacing: 16) {
+            HStack(spacing: 24) {
                 // Album Art (Strictly Square)
                 if let artwork = data.mediaArtwork {
                     Image(nsImage: artwork)
@@ -105,7 +105,7 @@ struct AestheticMediaWidget: View {
                 }
                 .padding(.vertical, 12)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 24)
         }
         .frame(width: width, height: height)
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
@@ -312,7 +312,7 @@ struct EventCard: View {
                 
                 VStack(alignment: .leading, spacing: 6) {
                     Text(event.title)
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
                         .lineLimit(1)
                     
@@ -336,7 +336,7 @@ struct EventCard: View {
                                 .cornerRadius(6)
                         }
                     }
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
                     .foregroundColor(.white.opacity(0.6))
                 }
             }

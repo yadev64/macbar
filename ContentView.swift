@@ -22,14 +22,14 @@ struct ContentView: View {
         let hStackPadding: CGFloat = 50 // .padding(.horizontal, 25)
         let timeWidth: CGFloat = showClock ? 85 : 0
         let hStackSpacing: CGFloat = 16 // Gap
-        let minStatsWidth: CGFloat = showStatsBar ? 500 : 160
+        let minStatsWidth: CGFloat = (showStatsBar && !aestheticMode) ? 500 : 160
         
         if aestheticMode {
             // Aesthetic mode width: sum of chosen aesthetic widgets with new spacious ratios
             var totalAestheticWidth: CGFloat = 0
             for widget in aestheticWidgets {
                 switch widget {
-                case "Media": totalAestheticWidth += max(CGFloat(barHeight * 2.5), 280)
+                case "Media": totalAestheticWidth += max(CGFloat(barHeight * 2.8), 300)
                 case "Calendar": totalAestheticWidth += max(CGFloat(barHeight * 4.0), 380)
                 case "System": totalAestheticWidth += max(CGFloat(barHeight * 1.6), 160)
                 default: break
@@ -37,7 +37,7 @@ struct ContentView: View {
             }
             
             // Add padding (sides + icon toggle) and spacing
-            let padding: CGFloat = 40 // 20 on each side
+            let padding: CGFloat = 16 // 8 on each side
             let spacing = CGFloat(max(0, aestheticWidgets.count - 1)) * 16
             let calculated = totalAestheticWidth + padding + spacing
             
@@ -96,6 +96,9 @@ struct ContentView: View {
                                 Button(action: {
                                     withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                                         aestheticMode.toggle()
+                                        if aestheticMode {
+                                            barHeight = 130
+                                        }
                                     }
                                 }) {
                                     Image(systemName: "sparkles")
@@ -139,7 +142,7 @@ struct ContentView: View {
                                     buildAestheticModule(name: mod)
                                 }
                             }
-                            .padding(.horizontal, 20) // Snug to edges
+                            .padding(.horizontal, 8) // Snug to edges
                             .padding(.vertical, 4) // 4px padding around widgets
                         } else {
                             // UTILITY LAYOUT
@@ -200,6 +203,9 @@ struct ContentView: View {
                                 Button(action: {
                                     withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                                         aestheticMode.toggle()
+                                        if aestheticMode {
+                                            barHeight = 130
+                                        }
                                     }
                                 }) {
                                     Image(systemName: "rectangle.grid.3x2.fill")
