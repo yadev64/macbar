@@ -78,7 +78,7 @@ struct ContentView: View {
     
     private var expandedHeight: CGFloat {
         if aestheticMode {
-            return CGFloat(barHeight) + 42 // 28pt control bar + 6pt top padding + 8pt widget vertical padding
+            return CGFloat(barHeight) + 46 // 32pt control bar + 6pt top padding + 8pt widget vertical padding
         } else {
             return showStatsBar ? CGFloat(barHeight) + 22 : CGFloat(barHeight)
         }
@@ -94,34 +94,30 @@ struct ContentView: View {
                         if aestheticMode {
                             // Dedicated Top Control Bar for Aesthetic Mode
                             HStack {
-                                Button(action: {
-                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                                        aestheticMode.toggle()
-                                        if aestheticMode {
-                                            barHeight = 130
+                                TopControlButton(
+                                    icon: "sparkles",
+                                    color: .accentColor,
+                                    action: {
+                                        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                                            aestheticMode.toggle()
+                                            if aestheticMode {
+                                                barHeight = 130
+                                            }
                                         }
                                     }
-                                }) {
-                                    Image(systemName: "sparkles")
-                                        .foregroundColor(Color.accentColor) // Highlighted state
-                                        .font(.system(size: 14))
-                                        .padding(8)
-                                }
-                                .buttonStyle(PlainButtonStyle())
+                                )
                                 .padding(.leading, 16)
                                 
                                 Spacer()
                                 
-                                Button(action: { openSettings() }) {
-                                    Image(systemName: "gearshape.fill")
-                                        .foregroundColor(.gray.opacity(0.8))
-                                        .font(.system(size: 13))
-                                        .padding(8)
-                                }
-                                .buttonStyle(PlainButtonStyle())
+                                TopControlButton(
+                                    icon: "gearshape.fill",
+                                    color: .gray.opacity(0.8),
+                                    size: 13,
+                                    action: { openSettings() }
+                                )
                                 .padding(.trailing, 16)
                             }
-                            .frame(height: 28) // Same height logic as StatsBar
                             .padding(.top, 6)
                             
                         } else if showStatsBar {
@@ -201,20 +197,18 @@ struct ContentView: View {
                         // TOP LEFT TAB TOGGLE BUTTON
                         VStack {
                             HStack {
-                                Button(action: {
-                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                                        aestheticMode.toggle()
-                                        if aestheticMode {
-                                            barHeight = 130
+                                TopControlButton(
+                                    icon: "rectangle.grid.3x2.fill",
+                                    color: .gray.opacity(0.5),
+                                    action: {
+                                        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                                            aestheticMode.toggle()
+                                            if aestheticMode {
+                                                barHeight = 130
+                                            }
                                         }
                                     }
-                                }) {
-                                    Image(systemName: "rectangle.grid.3x2.fill")
-                                        .foregroundColor(.gray.opacity(0.5))
-                                        .font(.system(size: 14))
-                                        .padding(8)
-                                }
-                                .buttonStyle(PlainButtonStyle())
+                                )
                                 .padding(.top, 4)
                                 .padding(.leading, 12)
                                 Spacer()
@@ -227,13 +221,12 @@ struct ContentView: View {
                         VStack {
                             HStack {
                                 Spacer()
-                                Button(action: { openSettings() }) {
-                                    Image(systemName: "gearshape.fill")
-                                        .foregroundColor(.gray.opacity(0.5))
-                                        .font(.system(size: 12))
-                                        .padding(8)
-                                }
-                                .buttonStyle(PlainButtonStyle())
+                                TopControlButton(
+                                    icon: "gearshape.fill",
+                                    color: .gray.opacity(0.5),
+                                    size: 12,
+                                    action: { openSettings() }
+                                )
                                 .padding(.top, 4)
                                 .padding(.trailing, 8)
                             }
@@ -367,5 +360,29 @@ struct VisualEffectView: NSViewRepresentable {
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
         nsView.material = material
         nsView.blendingMode = blendingMode
+    }
+}
+
+// MARK: - Top Control Button
+struct TopControlButton: View {
+    let icon: String
+    let color: Color
+    var size: CGFloat = 14
+    let action: () -> Void
+    
+    @State private var isHovered = false
+    
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .foregroundColor(color)
+                .font(.system(size: size))
+                .frame(width: 32, height: 32)
+                .background(isHovered ? Color.white.opacity(0.1) : Color.white.opacity(0.001))
+                .cornerRadius(8)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(PlainButtonStyle())
+        .onHover { hover in isHovered = hover }
     }
 }

@@ -26,6 +26,17 @@ var elapsed: Double = 0
 var artworkBase64 = ""
 var done = 0
 
+var checkCount = 0
+func attemptExit() {
+    checkCount += 1
+    if done >= 3 || checkCount > 10 { // Wait up to 0.5s
+        print("\(title)|||\(artist)|||\(source)|||\(playing)|||\(duration)|||\(elapsed)|||\(artworkBase64)")
+        exit(0)
+    } else {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { attemptExit() }
+    }
+}
+
 getInfo(DispatchQueue.main) { info in
     title = info["kMRMediaRemoteNowPlayingInfoTitle"] as? String ?? "Not Playing"
     artist = info["kMRMediaRemoteNowPlayingInfoArtist"] as? String ?? ""
@@ -43,6 +54,5 @@ getPID(DispatchQueue.main) { pid in
     done += 1
 }
 
-// Run loop is required for MediaRemote callbacks to fire
-RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.5))
-print("\(title)|||\(artist)|||\(source)|||\(playing)|||\(duration)|||\(elapsed)|||\(artworkBase64)")
+attemptExit()
+CFRunLoopRun()
